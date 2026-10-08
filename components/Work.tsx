@@ -5,7 +5,7 @@ import Link from "next/link";
 import { gsap, registerGsap } from "@/lib/gsap";
 import { projects } from "@/lib/data";
 import { setThemeFromProject, clearTheme } from "@/lib/theme";
-import SplitHeading from "./SplitHeading";
+import MorphHeading from "./MorphHeading";
 import Reveal from "./Reveal";
 import DistortImage from "./DistortImage";
 
@@ -43,9 +43,9 @@ export default function Work() {
     <section id="work" data-grade="none" className="shell pt-[16vh] pb-[8vh]">
       <header className="grid grid-cols-12 gap-x-4 gap-y-6 pb-[12vh]">
         <span className="col-span-12 t-eyebrow lg:col-span-3">Selected work / 01—05</span>
-        <SplitHeading className="col-span-12 t-lg lg:col-span-8">
+        <MorphHeading className="col-span-12 t-lg lg:col-span-8" wdth={[98, 120]}>
           Work built to make the right people stop.
-        </SplitHeading>
+        </MorphHeading>
       </header>
 
       <div ref={list} onMouseLeave={clearTheme} className="flex flex-col gap-[14vh]">

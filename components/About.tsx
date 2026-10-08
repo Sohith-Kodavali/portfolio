@@ -2,7 +2,7 @@
 
 import { profile } from "@/lib/data";
 import { useClock } from "@/lib/useClock";
-import SplitHeading from "./SplitHeading";
+import MorphHeading from "./MorphHeading";
 import ClipReveal from "./ClipReveal";
 import ScrollRevealText from "./ScrollRevealText";
 
@@ -30,9 +30,9 @@ export default function About() {
         <div className="col-span-12 flex flex-col justify-between lg:col-span-7 lg:pl-[4vw]">
           <div>
             <span className="t-eyebrow">About / 04</span>
-            <SplitHeading className="t-lg mt-5 max-w-[16ch]">
+            <MorphHeading className="t-lg mt-5 max-w-[16ch]">
               Design is the quiet part of the argument.
-            </SplitHeading>
+            </MorphHeading>
 
             <div className="mt-9 flex flex-col gap-6 text-[clamp(16px,1.15vw,20px)] leading-relaxed text-bone/85">
               <ScrollRevealText as="p" className="max-w-[52ch]" dim={0.18}>

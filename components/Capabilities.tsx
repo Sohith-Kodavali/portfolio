@@ -1,22 +1,22 @@
 "use client";
 
 import { capabilities } from "@/lib/data";
-import SplitHeading from "./SplitHeading";
+import MorphHeading from "./MorphHeading";
 import Reveal from "./Reveal";
 import Parallax from "./Parallax";
 
 export default function Capabilities() {
-  // Desaturated to roughly half the chroma of the original amber: with a
-  // `color` blend the tint's own saturation drives how strong the cast reads,
-  // so this halves it without touching the global opacity knob.
+  // Desaturated hard from the original amber. With a `color` blend the tint's
+  // own saturation drives how strong the cast reads, so this dials it down
+  // without touching the global opacity knob.
   return (
-    <section id="capabilities" data-grade="#d9b18c" className="shell py-[12vh]">
+    <section id="capabilities" data-grade="#beb2a7" className="shell py-[12vh]">
       <div className="mb-[6vh] flex flex-wrap items-end justify-between gap-8">
         <div>
           <span className="t-eyebrow">What I do / 02</span>
-          <SplitHeading className="t-lg mt-5 max-w-[16ch]">
+          <MorphHeading className="t-lg mt-5 max-w-[16ch]">
             Four disciplines, one hand.
-          </SplitHeading>
+          </MorphHeading>
         </div>
         <p className="max-w-[36ch] text-sm text-muted">
           Design and engineering in the same loop — so nothing is lost in translation between

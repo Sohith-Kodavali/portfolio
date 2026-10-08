@@ -3,7 +3,7 @@
 import { useEffect, useRef } from "react";
 import { gsap, registerGsap } from "@/lib/gsap";
 import { testimonials } from "@/lib/data";
-import SplitHeading from "./SplitHeading";
+import MorphHeading from "./MorphHeading";
 
 export default function Testimonials() {
   const root = useRef<HTMLDivElement>(null);
@@ -43,9 +43,9 @@ export default function Testimonials() {
     <section ref={root} aria-label="Testimonials" className="relative overflow-hidden">
       <div className="shell pt-[12vh]">
         <span className="t-eyebrow">Said about the work / 05</span>
-        <SplitHeading className="t-lg mt-5 max-w-[18ch]">
+        <MorphHeading className="t-lg mt-5 max-w-[18ch]">
           The proof is in the people who paid for it.
-        </SplitHeading>
+        </MorphHeading>
       </div>
 
       <div className="flex h-[62vh] items-center">
