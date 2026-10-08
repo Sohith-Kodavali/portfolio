@@ -98,7 +98,7 @@ export const projects: Project[] = [
     scope: ["Art direction", "Design system", "Front-end", "Motion"],
     stack: ["Next.js", "React", "Three.js", "Framer Motion"],
     outcome: "Case study to be written.",
-    image: "/work/vexon.svg",
+    image: "/work/vexon.webp",
     colors: { c1: [0.26, 0.54, 0.98], c2: [0.02, 0.04, 0.11], freq: 3.0, warp: 1.5 }
   },
   {

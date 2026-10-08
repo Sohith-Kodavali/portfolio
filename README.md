@@ -18,6 +18,8 @@ pnpm dev        # http://localhost:3000
 pnpm build      # production build
 pnpm start      # serve the production build
 pnpm typecheck  # tsc --noEmit
+pnpm images     # compress public/work images + emit .webp siblings
+pnpm clean      # remove .next (needed when switching between build and dev)
 ```
 
 ## Where things live
@@ -28,17 +30,19 @@ pnpm typecheck  # tsc --noEmit
 | Design tokens, palette, type scale | `app/globals.css` (`@theme`) |
 | Fonts | `app/fonts.ts` |
 | Global systems (cursor, loader, smooth scroll, progress) | `components/*.tsx` |
-| WebGL background + adaptive quality | `components/HeroCanvas.tsx`, `lib/quality.ts` |
-| Home sections | `components/Hero.tsx`, `Work.tsx`, `Capabilities.tsx`, `Process.tsx`, `About.tsx`, `Testimonials.tsx`, `Contact.tsx` |
+| WebGL shell (wordmark, pointer, particles) + adaptive quality | `components/ShellCanvas.tsx`, `components/WordText.tsx`, `lib/quality.ts` |
+| Home sections | `components/Hero.tsx`, `Work.tsx`, `Capabilities.tsx`, `About.tsx`, `Testimonials.tsx`, `Contact.tsx` |
 | Case study page | `app/work/[slug]/page.tsx`, `components/CaseStudy.tsx` |
-| Placeholder images | `public/**` (SVG) |
+| Project images | `public/work/*` |
 
 ## Swapping in real content
 
 1. **Text & projects** — edit `lib/data.ts`. Project `colors` (c1/c2/freq/warp) drive the WebGL
    palette change on hover; the case studies auto-generate from the same array.
-2. **Images** — replace the SVGs in `public/work/*.svg` and `public/portrait.svg`. Keep the same
-   filenames and you don't have to touch any code. `public/og.svg` is the social share image.
+2. **Images** — drop them in `public/work/`. **Use `.webp`**: run `pnpm images` and it compresses
+   everything in that folder and writes a `.webp` next to each file, then point `image` in
+   `lib/data.ts` at the `.webp`. (The first real image, `vexon`, went from 1.9 MB as a PNG to
+   53 KB as WebP.) `public/portrait.svg` and `public/og.svg` are still placeholders.
 3. **Metadata** — update `metadataBase`, title and description in `app/layout.tsx`, plus
    `app/robots.ts` and `app/sitemap.ts` (currently `https://example.com`).
 4. **Contact** — `profile.email` and `profile.socials` in `lib/data.ts`.
