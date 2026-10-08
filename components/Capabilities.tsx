@@ -6,8 +6,11 @@ import Reveal from "./Reveal";
 import Parallax from "./Parallax";
 
 export default function Capabilities() {
+  // Desaturated to roughly half the chroma of the original amber: with a
+  // `color` blend the tint's own saturation drives how strong the cast reads,
+  // so this halves it without touching the global opacity knob.
   return (
-    <section id="capabilities" data-grade="#ffb066" className="shell py-[12vh]">
+    <section id="capabilities" data-grade="#d9b18c" className="shell py-[12vh]">
       <div className="mb-[6vh] flex flex-wrap items-end justify-between gap-8">
         <div>
           <span className="t-eyebrow">What I do / 02</span>

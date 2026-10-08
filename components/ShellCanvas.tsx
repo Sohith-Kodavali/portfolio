@@ -64,6 +64,115 @@ function WordDriver({
   );
 }
 
+const particleVertex = /* glsl */ `
+  attribute vec3 aRandom;
+  uniform float uTime;
+  uniform float uSize;
+  uniform float uDpr;
+  uniform vec2  uMouse;
+  varying float vAlpha;
+  void main() {
+    vec3 p = position;
+    vec3 flow = vec3(
+      sin(p.y * 1.6 + uTime * 0.30 + aRandom.x * 6.2831),
+      cos(p.x * 1.4 - uTime * 0.26 + aRandom.y * 6.2831),
+      0.0
+    );
+    p.xy += flow.xy * (0.05 + aRandom.x * 0.10);
+    p.y = mod(p.y + uTime * (0.006 + aRandom.y * 0.012) + 1.0, 2.0) - 1.0;
+
+    // shove grains away from the cursor, then let them drift back
+    float md = distance(p.xy, uMouse);
+    p.xy += normalize(p.xy - uMouse + 1e-4) * exp(-md * 5.0) * 0.14;
+
+    gl_Position = vec4(p.xy, 0.0, 1.0);
+    gl_PointSize = uSize * uDpr * (0.35 + aRandom.z * 0.9);
+    vAlpha = 0.08 + 0.38 * aRandom.x;
+  }
+`;
+
+const particleFragment = /* glsl */ `
+  precision highp float;
+  uniform vec3 uColor;
+  varying float vAlpha;
+  void main() {
+    vec2 c = gl_PointCoord - 0.5;
+    float a = smoothstep(0.5, 0.05, length(c));
+    gl_FragColor = vec4(uColor, a * vAlpha);
+  }
+`;
+
+/** Fine grains drifting through the hero, brushed aside by the cursor. */
+function ParticleField({
+  count,
+  dark,
+  active
+}: {
+  count: number;
+  dark: boolean;
+  active: boolean;
+}) {
+  const pts = useRef<THREE.ShaderMaterial>(null);
+  const { pointer, viewport } = useThree();
+  void viewport;
+
+  const { positions, randoms } = useMemo(() => {
+    const n = Math.max(4000, Math.min(count, 60000));
+    const pos = new Float32Array(n * 3);
+    const rnd = new Float32Array(n * 3);
+    for (let i = 0; i < n; i++) {
+      pos[i * 3] = Math.random() * 2 - 1;
+      pos[i * 3 + 1] = Math.random() * 2 - 1;
+      pos[i * 3 + 2] = Math.random() * 2 - 1;
+      rnd[i * 3] = Math.random();
+      rnd[i * 3 + 1] = Math.random();
+      rnd[i * 3 + 2] = Math.random();
+    }
+    return { positions: pos, randoms: rnd };
+  }, [count]);
+
+  const uniforms = useMemo(
+    () => ({
+      uTime: { value: 0 },
+      uSize: { value: 1.4 },
+      uDpr: { value: Math.min(typeof window === "undefined" ? 1 : window.devicePixelRatio, 1.5) },
+      uMouse: { value: new THREE.Vector2(0, 0) },
+      uColor: { value: new THREE.Color("#5b7fb8") }
+    }),
+    []
+  );
+
+  useEffect(() => {
+    uniforms.uColor.value.set(dark ? "#8fb4ff" : "#5b7fb8");
+  }, [dark, uniforms]);
+
+  useFrame((state, delta) => {
+    if (!pts.current || !active) return;
+    const u = pts.current.uniforms;
+    u.uTime.value = state.clock.elapsedTime;
+    u.uMouse.value.lerp(pointer, 1 - Math.pow(0.002, delta));
+  });
+
+  return (
+    <points frustumCulled={false} renderOrder={-1}>
+      <bufferGeometry>
+        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
+        <bufferAttribute attach="attributes-aRandom" args={[randoms, 3]} />
+      </bufferGeometry>
+      <shaderMaterial
+        ref={pts}
+        uniforms={uniforms}
+        vertexShader={particleVertex}
+        fragmentShader={particleFragment}
+        transparent
+        depthTest={false}
+        depthWrite={false}
+        blending={THREE.AdditiveBlending}
+      />
+    </points>
+  );
+}
+
 function makeRoundedTriangle(radius: number, round: number) {
   const sides = 3;
   const shape = new THREE.Shape();
@@ -236,6 +345,7 @@ export default function ShellCanvas() {
       >
         <ScrollBridge scroll={scroll} />
         <Lighting dark={dark} />
+        <ParticleField count={quality.particles} dark={dark} active={active} />
         <Suspense fallback={null}>
           <WordDriver dark={dark} glass={glass} scroll={scroll} />
         </Suspense>
