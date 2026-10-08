@@ -23,14 +23,16 @@ const FRAG = /* glsl */ `
   uniform float uHover;
   uniform float uTime;
 
+  // Replicates object-fit: cover. The visible plane shows only a *sub-range* of
+  // the texture, so the range has to be narrowed (multiplied), never widened.
   vec2 coverUv(vec2 uv) {
     float planeAspect = uRes.x / max(uRes.y, 1.0);
     if (planeAspect > uTexAspect) {
       float s = uTexAspect / planeAspect;
-      uv.y = (uv.y - 0.5) / s + 0.5;
+      uv.y = (uv.y - 0.5) * s + 0.5;
     } else {
-      float s = planeAspect / uTexAspect;
-      uv.x = (uv.x - 0.5) / s + 0.5;
+      float s = planeAspect / max(uTexAspect, 0.0001);
+      uv.x = (uv.x - 0.5) * s + 0.5;
     }
     return uv;
   }
