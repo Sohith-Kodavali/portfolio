@@ -3,11 +3,27 @@
 import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
-import * as THREE from "three";
+import { THREE, createRenderer } from "@/lib/webgpu";
+import {
+  attribute,
+  cos,
+  exp,
+  float,
+  length,
+  pointUV,
+  positionLocal,
+  sin,
+  smoothstep,
+  uniform,
+  vec2,
+  vec4,
+  vec3
+} from "three/tsl";
 import { useQuality } from "@/lib/quality";
 import { useTheme } from "@/lib/useTheme";
 import { stage } from "@/lib/zoom";
 import WordText from "./WordText";
+import Effects from "./Effects";
 
 const WORD_Y = 0.45;
 const BLUE = new THREE.Color("#2f7ef0");
@@ -64,45 +80,13 @@ function WordDriver({
   );
 }
 
-const particleVertex = /* glsl */ `
-  attribute vec3 aRandom;
-  uniform float uTime;
-  uniform float uSize;
-  uniform float uDpr;
-  uniform vec2  uMouse;
-  varying float vAlpha;
-  void main() {
-    vec3 p = position;
-    vec3 flow = vec3(
-      sin(p.y * 1.6 + uTime * 0.30 + aRandom.x * 6.2831),
-      cos(p.x * 1.4 - uTime * 0.26 + aRandom.y * 6.2831),
-      0.0
-    );
-    p.xy += flow.xy * (0.05 + aRandom.x * 0.10);
-    p.y = mod(p.y + uTime * (0.006 + aRandom.y * 0.012) + 1.0, 2.0) - 1.0;
-
-    // shove grains away from the cursor, then let them drift back
-    float md = distance(p.xy, uMouse);
-    p.xy += normalize(p.xy - uMouse + 1e-4) * exp(-md * 5.0) * 0.14;
-
-    gl_Position = vec4(p.xy, 0.0, 1.0);
-    gl_PointSize = uSize * uDpr * (0.35 + aRandom.z * 0.9);
-    vAlpha = 0.08 + 0.38 * aRandom.x;
-  }
-`;
-
-const particleFragment = /* glsl */ `
-  precision highp float;
-  uniform vec3 uColor;
-  varying float vAlpha;
-  void main() {
-    vec2 c = gl_PointCoord - 0.5;
-    float a = smoothstep(0.5, 0.05, length(c));
-    gl_FragColor = vec4(uColor, a * vAlpha);
-  }
-`;
-
-/** Fine grains drifting through the hero, brushed aside by the cursor. */
+/**
+ * Fine grains drifting through the hero, brushed aside by the cursor.
+ *
+ * Written in TSL rather than GLSL. A raw ShaderMaterial would compile on the
+ * WebGL2 fallback backend and silently render nothing under WebGPU; TSL is
+ * authored once and compiles to WGSL or GLSL depending on the active backend.
+ */
 function ParticleField({
   count,
   dark,
@@ -112,9 +96,7 @@ function ParticleField({
   dark: boolean;
   active: boolean;
 }) {
-  const pts = useRef<THREE.ShaderMaterial>(null);
-  const { pointer, viewport } = useThree();
-  void viewport;
+  const { pointer } = useThree();
 
   const { positions, randoms } = useMemo(() => {
     const n = Math.max(4000, Math.min(count, 60000));
@@ -133,42 +115,77 @@ function ParticleField({
 
   const uniforms = useMemo(
     () => ({
-      uTime: { value: 0 },
-      uSize: { value: 1.4 },
-      uDpr: { value: Math.min(typeof window === "undefined" ? 1 : window.devicePixelRatio, 1.5) },
-      uMouse: { value: new THREE.Vector2(0, 0) },
-      uColor: { value: new THREE.Color("#5b7fb8") }
+      uTime: uniform(0),
+      uSize: uniform(1.4),
+      uDpr: uniform(typeof window === "undefined" ? 1 : Math.min(window.devicePixelRatio, 1.5)),
+      uMouse: uniform(new THREE.Vector2(0, 0)),
+      uColor: uniform(new THREE.Color("#5b7fb8"))
     }),
     []
   );
+
+  const material = useMemo(() => {
+    const { uTime, uSize, uDpr, uMouse, uColor } = uniforms;
+    const aRandom = attribute("aRandom", "vec3");
+
+    const amp = aRandom.x.mul(0.1).add(0.05);
+    const flow = vec3(
+      sin(positionLocal.y.mul(1.6).add(uTime.mul(0.3)).add(aRandom.x.mul(6.2831))),
+      cos(positionLocal.x.mul(1.4).sub(uTime.mul(0.26)).add(aRandom.y.mul(6.2831))),
+      float(0)
+    );
+
+    const x = positionLocal.x.add(flow.x.mul(amp));
+    // Wraps through [-1, 1] so the field never runs out of grains.
+    const y = positionLocal.y
+      .add(flow.y.mul(amp))
+      .add(uTime.mul(aRandom.y.mul(0.012).add(0.006)))
+      .add(1)
+      .mod(2)
+      .sub(1);
+
+    // Shove grains away from the cursor, then let them drift back.
+    const d = vec2(x, y).sub(uMouse);
+    const push = exp(d.length().mul(-5)).mul(0.14);
+    const off = d.mul(push).div(d.length().add(1e-4));
+
+    // pointUV is the point-sprite coordinate (gl_PointCoord). @types/three
+    // declares it as a bare `Node`, so the vector operators are missing from the
+    // type even though the runtime value is a vec2 node — hence the narrow cast
+    // through the typed vec2 surface.
+    const centred = (pointUV as unknown as ReturnType<typeof vec2>).sub(0.5);
+    const sprite = length(centred);
+    const falloff = smoothstep(float(0.5), float(0.05), sprite);
+    const alpha = falloff.mul(aRandom.x.mul(0.38).add(0.08));
+
+    const m = new THREE.PointsNodeMaterial();
+    m.positionNode = vec3(x.add(off.x), y.add(off.y), positionLocal.z);
+    m.sizeNode = uSize.mul(uDpr).mul(aRandom.z.mul(0.9).add(0.35));
+    m.colorNode = vec4(uColor, 1);
+    m.opacityNode = alpha;
+    m.transparent = true;
+    m.depthTest = false;
+    m.depthWrite = false;
+    m.blending = THREE.AdditiveBlending;
+    return m;
+  }, [uniforms]);
 
   useEffect(() => {
     uniforms.uColor.value.set(dark ? "#8fb4ff" : "#5b7fb8");
   }, [dark, uniforms]);
 
   useFrame((state, delta) => {
-    if (!pts.current || !active) return;
-    const u = pts.current.uniforms;
-    u.uTime.value = state.clock.elapsedTime;
-    u.uMouse.value.lerp(pointer, 1 - Math.pow(0.002, delta));
+    if (!active) return;
+    uniforms.uTime.value = state.clock.elapsedTime;
+    uniforms.uMouse.value.lerp(pointer, 1 - Math.pow(0.002, delta));
   });
 
   return (
-    <points frustumCulled={false} renderOrder={-1}>
+    <points frustumCulled={false} renderOrder={-1} material={material}>
       <bufferGeometry>
         <bufferAttribute attach="attributes-position" args={[positions, 3]} />
         <bufferAttribute attach="attributes-aRandom" args={[randoms, 3]} />
       </bufferGeometry>
-      <shaderMaterial
-        ref={pts}
-        uniforms={uniforms}
-        vertexShader={particleVertex}
-        fragmentShader={particleFragment}
-        transparent
-        depthTest={false}
-        depthWrite={false}
-        blending={THREE.AdditiveBlending}
-      />
     </points>
   );
 }
@@ -328,6 +345,17 @@ export default function ShellCanvas() {
     };
   }, []);
 
+  // Post-processing is built but held off: the scene pass renders to a texture
+  // without an alpha channel, so the transparent canvas comes back as opaque
+  // black and buries the light background. Effects stays wired and fail-safe;
+  // flip this on once the pass preserves alpha.
+  const POST_PROCESSING = false;
+  const effectTier: "full" | "light" | "off" = !POST_PROCESSING || quality.reduced
+    ? "off"
+    : quality.fx
+      ? "full"
+      : "light";
+
   return (
     // Hidden outright when the shell is paused: `frameloop="never"` stops
     // useFrame, so whatever the pointer's last state was would otherwise stay
@@ -341,7 +369,7 @@ export default function ShellCanvas() {
         frameloop={active ? "always" : "never"}
         dpr={quality.dpr}
         camera={{ position: [0, 0, 5], fov: 45 }}
-        gl={{ antialias: false, alpha: true, powerPreference: "high-performance" }}
+        gl={createRenderer}
       >
         <ScrollBridge scroll={scroll} />
         <Lighting dark={dark} />
@@ -350,6 +378,7 @@ export default function ShellCanvas() {
           <WordDriver dark={dark} glass={glass} scroll={scroll} />
         </Suspense>
         <PointerObject />
+        <Effects tier={effectTier} />
       </Canvas>
     </div>
   );
