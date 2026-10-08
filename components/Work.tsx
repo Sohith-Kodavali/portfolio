@@ -40,7 +40,7 @@ export default function Work() {
   }, []);
 
   return (
-    <section id="work" className="shell pt-[16vh] pb-[8vh]">
+    <section id="work" data-grade="none" className="shell pt-[16vh] pb-[8vh]">
       <header className="grid grid-cols-12 gap-x-4 gap-y-6 pb-[12vh]">
         <span className="col-span-12 t-eyebrow lg:col-span-3">Selected work / 01—05</span>
         <SplitHeading className="col-span-12 t-lg lg:col-span-8">

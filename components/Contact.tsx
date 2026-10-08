@@ -19,7 +19,7 @@ export default function Contact() {
   };
 
   return (
-    <section id="contact" className="shell py-[14vh]">
+    <section id="contact" data-grade="#7f8cff" className="shell py-[14vh]">
       <div className="flex flex-col items-center text-center">
         <span className="t-eyebrow">Contact / 06</span>
 

@@ -71,6 +71,7 @@ export default function Hero() {
     <section
       ref={root}
       id="top"
+      data-grade="none"
       className="relative flex min-h-screen flex-col shell pt-[92px] pb-[var(--gutter)]"
     >
       {/* top meta row */}

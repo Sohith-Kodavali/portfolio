@@ -6,7 +6,7 @@ import Parallax from "./Parallax";
 
 export default function Statement() {
   return (
-    <section aria-label="Statement" className="shell py-[20vh]">
+    <section aria-label="Statement" data-grade="#7fb0ff" className="shell py-[20vh]">
       <div className="flex items-start justify-between gap-10">
         <span className="t-eyebrow shrink-0 pt-3">Statement</span>
         <ScrollRevealText

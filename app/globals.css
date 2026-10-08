@@ -432,7 +432,31 @@ canvas {
   );
   filter: blur(19px);
   opacity: 0.9;
-  transform: translate3d(var(--ox, 0px), var(--oy, 0px), 0);
+  /* The light lags behind the scroll, which reads as inertia. */
+  transform: translate3d(var(--ox, 0px), calc(var(--oy, 0px) + var(--smear, 0px)), 0);
+}
+
+/* The blueprint grid leans very slightly with scroll velocity. */
+.grid-lines {
+  transform: translate3d(0, calc(var(--smear, 0px) * 0.35), 0);
+  will-change: transform;
+}
+
+/* ---------- Film-style colour grade ----------
+   One blended layer over the page; its colour follows the active section. */
+.color-grade {
+  position: fixed;
+  inset: 0;
+  z-index: 150;
+  pointer-events: none;
+  mix-blend-mode: soft-light;
+  opacity: 0;
+  transition: background-color 0.9s var(--cubic-66), opacity 0.9s var(--cubic-66);
+}
+
+/* Let the warp transition own the screen without a tint over it. */
+html[data-warping] .color-grade {
+  opacity: 0 !important;
 }
 
 /* Site chrome recedes while the warp transition owns the screen */

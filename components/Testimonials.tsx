@@ -37,6 +37,8 @@ export default function Testimonials() {
     return () => ctx.revert();
   }, []);
 
+  // No data-grade here on purpose: this section is pinned, so its rect moves
+  // with the pin and it cannot be a reliable colour-grade target.
   return (
     <section ref={root} aria-label="Testimonials" className="relative overflow-hidden">
       <div className="shell pt-[12vh]">

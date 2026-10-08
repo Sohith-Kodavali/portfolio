@@ -10,7 +10,7 @@ export default function About() {
   const time = useClock(true);
 
   return (
-    <section id="about" className="shell py-[12vh]">
+    <section id="about" data-grade="#8fb8ff" className="shell py-[12vh]">
       <div className="grid grid-cols-12 gap-8">
         <div className="col-span-12 lg:col-span-5">
           <ClipReveal className="ph aspect-[4/5] w-full" >
