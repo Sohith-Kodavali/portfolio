@@ -7,6 +7,7 @@ import { projects } from "@/lib/data";
 import { setThemeFromProject, clearTheme } from "@/lib/theme";
 import SplitHeading from "./SplitHeading";
 import Reveal from "./Reveal";
+import DistortImage from "./DistortImage";
 
 export default function Work() {
   const list = useRef<HTMLDivElement>(null);
@@ -62,12 +63,9 @@ export default function Work() {
               className="ph relative aspect-[16/9] w-full overflow-hidden"
               data-label={`${p.name} — image placeholder`}
             >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={p.image}
-                alt={`${p.name} — ${p.category}`}
-                className="h-full w-full scale-[1.01] object-cover transition-transform duration-[1.4s] ease-[cubic-bezier(.66,0,.01,1)] group-hover:scale-[1.06]"
-              />
+              <div className="absolute inset-0 transition-transform duration-[1.4s] ease-[cubic-bezier(.66,0,.01,1)] group-hover:scale-[1.06]">
+                <DistortImage src={p.image} alt={`${p.name} — ${p.category}`} />
+              </div>
               <span className="absolute top-5 right-5 font-mono text-[10px] uppercase tracking-[0.14em] text-bone/70 opacity-0 transition-opacity duration-500 group-hover:opacity-100">
                 View case ↗
               </span>
