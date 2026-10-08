@@ -1,0 +1,481 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Theme tokens — a 4-level label hierarchy over two themes, mirroring the
+   reference system. Light is the default; `.dark` on <html> flips it.
+   --------------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+  --label: 20, 20, 20;
+  --label-d: 42, 42, 40;
+  --bg: 235, 243, 248;
+  --bg-elevated: #e2ebf3;
+  --label-1: rgba(var(--label), 1);
+  --label-2: rgba(var(--label-d), 0.62);
+  --label-3: rgba(var(--label-d), 0.38);
+  --label-4: rgba(var(--label-d), 0.16);
+  --line: rgba(var(--label-d), 0.13);
+  --on-accent: #101010;
+
+  --font-display: var(--font-display), "Archivo", system-ui, sans-serif;
+  --font-serif: var(--font-serif), Georgia, serif;
+  --font-sans: var(--font-sans), system-ui, -apple-system, sans-serif;
+  --font-mono: var(--font-mono), ui-monospace, monospace;
+
+  --cubic-66: cubic-bezier(0.66, 0, 0.01, 1);
+  --selection: #c8ff3d;
+}
+
+.dark {
+  color-scheme: dark;
+  --label: 255, 255, 255;
+  --label-d: 228, 230, 230;
+  --bg: 12, 13, 13;
+  --bg-elevated: #191b1b;
+  --label-1: rgba(var(--label), 1);
+  --label-2: rgba(var(--label-d), 0.62);
+  --label-3: rgba(var(--label-d), 0.34);
+  --label-4: rgba(var(--label-d), 0.16);
+  --line: rgba(var(--label-d), 0.1);
+}
+
+@theme {
+  --color-ink: rgb(var(--bg));
+  --color-ink-2: var(--bg-elevated);
+  --color-ink-3: var(--bg-elevated);
+  --color-bone: var(--label-1);
+  --color-muted: var(--label-2);
+  --color-faint: var(--label-3);
+  --color-line: var(--line);
+  --color-accent: var(--selection);
+  --color-on-accent: var(--on-accent);
+
+  --font-display: var(--font-display);
+  --font-serif: var(--font-serif);
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+}
+
+:root {
+  --page-pad: clamp(18px, 2.2vw, 46px);
+  --gutter: clamp(14px, 1.6vw, 30px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+html.lenis,
+html.lenis body {
+  height: auto;
+}
+
+.lenis.lenis-smooth {
+  scroll-behavior: auto !important;
+}
+
+.lenis.lenis-stopped {
+  overflow: hidden;
+}
+
+body {
+  margin: 0;
+  background: rgb(var(--bg));
+  color: var(--label-1);
+  font-family: var(--font-sans);
+  overflow-x: clip;
+  transition: background-color 0.66s var(--cubic-66), color 0.66s var(--cubic-66);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  body,
+  a,
+  button,
+  [data-cursor] {
+    cursor: none;
+  }
+}
+
+::selection {
+  background: var(--selection);
+  color: #000;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+}
+
+h1,
+h2,
+h3,
+h4,
+p,
+figure,
+blockquote {
+  margin: 0;
+}
+
+img,
+video,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+/* ---------- Type ---------- */
+.t-display {
+  font-family: var(--font-display);
+  font-weight: 800;
+  line-height: 0.86;
+  letter-spacing: -0.035em;
+  text-transform: uppercase;
+}
+
+.t-serif {
+  font-family: var(--font-serif);
+  font-weight: 400;
+  font-style: italic;
+  text-transform: none;
+  letter-spacing: -0.02em;
+  font-variation-settings: "opsz" 144, "SOFT" 0, "WONK" 1;
+}
+
+.t-eyebrow {
+  font-family: var(--font-mono);
+  font-size: clamp(10px, 0.68vw, 12px);
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--label-2);
+}
+
+.t-lead {
+  font-size: clamp(17px, 1.25vw, 24px);
+  line-height: 1.5;
+  letter-spacing: -0.01em;
+  color: var(--label-1);
+}
+
+/* Viewport-relative display scale (svw) */
+.t-huge {
+  font-size: clamp(48px, 10svw, 220px);
+}
+
+.t-xl {
+  font-size: clamp(40px, 7.2svw, 160px);
+}
+
+.t-lg {
+  font-size: clamp(30px, 4.6svw, 96px);
+}
+
+.t-md {
+  font-size: clamp(22px, 2.4svw, 52px);
+}
+
+/* ---------- Layout ---------- */
+.shell {
+  padding-inline: var(--page-pad);
+}
+
+.rule {
+  height: 1px;
+  width: 100%;
+  background: var(--line);
+}
+
+/* Visible 12-column grid — a designed element, not just a scaffold */
+.grid-lines {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.grid-frame {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: var(--page-pad);
+  right: var(--page-pad);
+}
+
+.grid-cols {
+  display: grid;
+  grid-template-columns: repeat(12, 1fr);
+  height: 100%;
+}
+
+.grid-cols > span {
+  border-left: 1px solid var(--line);
+  opacity: 0.6;
+}
+
+.grid-cols > span:last-child {
+  border-right: 1px solid var(--line);
+}
+
+.grid-plus {
+  position: absolute;
+  width: 9px;
+  height: 9px;
+  transform: translate(-50%, -50%);
+}
+
+.grid-plus::before,
+.grid-plus::after {
+  content: "";
+  position: absolute;
+  background: var(--label-4);
+}
+
+.grid-plus::before {
+  left: 50%;
+  top: 0;
+  width: 1px;
+  height: 100%;
+  transform: translateX(-50%);
+}
+
+.grid-plus::after {
+  top: 50%;
+  left: 0;
+  height: 1px;
+  width: 100%;
+  transform: translateY(-50%);
+}
+
+/* ---------- Details ---------- */
+/* Dotted underline drawn as a gradient (not text-decoration) */
+.u-dot {
+  background-image: radial-gradient(circle at center, var(--label-2) 0.7px, transparent 0.8px);
+  background-size: 6px 3px;
+  background-position: left bottom;
+  background-repeat: repeat-x;
+  padding-bottom: 6px;
+  text-decoration: none;
+}
+
+/* ---------- Reveal primitives ---------- */
+.reveal-mask {
+  display: inline-block;
+  overflow: hidden;
+  vertical-align: top;
+  padding-bottom: 0.08em;
+}
+
+.reveal-mask > span {
+  display: inline-block;
+  will-change: transform;
+}
+
+.split .char {
+  display: inline-block;
+  will-change: transform;
+}
+
+.split .word {
+  display: inline-block;
+  white-space: nowrap;
+}
+
+.rw {
+  display: inline-block;
+  will-change: opacity;
+}
+
+/* Per-character fade */
+.char-seq > span {
+  display: inline-block;
+  opacity: 0;
+  animation: charIn 0.9s var(--cubic-66) forwards;
+}
+
+@keyframes charIn {
+  from { opacity: 0; filter: blur(6px); }
+  to { opacity: 1; filter: blur(0); }
+}
+
+@keyframes scrolldot {
+  0% { transform: translateY(-12px); }
+  60%, 100% { transform: translateY(32px); }
+}
+
+@keyframes spin-slow {
+  to { transform: rotate(360deg); }
+}
+
+.spin-slow {
+  animation: spin-slow 14s linear infinite;
+}
+
+/* ---------- Media placeholder ---------- */
+.ph {
+  position: relative;
+  overflow: hidden;
+  background:
+    radial-gradient(120% 120% at 20% 0%, rgba(200, 255, 61, 0.16), transparent 55%),
+    radial-gradient(120% 120% at 100% 100%, rgba(60, 90, 160, 0.16), transparent 55%),
+    linear-gradient(160deg, rgba(0, 0, 0, 0.06), rgba(0, 0, 0, 0.02));
+  border: 1px solid var(--line);
+}
+
+.ph::after {
+  content: attr(data-label);
+  position: absolute;
+  left: 14px;
+  bottom: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--label-3);
+}
+
+.ph::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: repeating-linear-gradient(
+    -45deg,
+    var(--line) 0 1px,
+    transparent 1px 11px
+  );
+  opacity: 0.7;
+}
+
+/* ---------- Grain ---------- */
+.grain {
+  position: fixed;
+  inset: -50%;
+  z-index: 200;
+  pointer-events: none;
+  opacity: 0.035;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  /* Static: animating a full-screen blended layer cost a composite every frame
+     for an effect nobody reads as motion. */
+  mix-blend-mode: multiply;
+}
+
+.dark .grain {
+  mix-blend-mode: screen;
+  opacity: 0.05;
+}
+
+@keyframes grain {
+  0% { transform: translate(0, 0); }
+  20% { transform: translate(-4%, 3%); }
+  40% { transform: translate(3%, -5%); }
+  60% { transform: translate(-2%, 4%); }
+  80% { transform: translate(5%, 2%); }
+  100% { transform: translate(0, 0); }
+}
+
+.marquee {
+  display: flex;
+  white-space: nowrap;
+  will-change: transform;
+}
+
+/* ---------- Hero backdrop ----------
+   Sits behind the grid (-1) and the WebGL shell (0). Only the transform
+   changes per frame, so moving the light costs no repaint. */
+.hero-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.dark .hero-backdrop {
+  display: none;
+}
+
+.hero-backdrop__wash,
+.hero-backdrop__streaks {
+  position: absolute;
+  inset: -18%;
+  will-change: transform;
+}
+
+.hero-backdrop__wash {
+  /* A real blue across the whole frame, with the light coming from the
+     top-left. Kept light enough through the centre that the glass wordmark
+     still reads against it. */
+  background:
+    radial-gradient(80% 70% at 18% 4%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 62%),
+    radial-gradient(90% 80% at 82% 96%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 58%),
+    linear-gradient(162deg, #d8e9fc 0%, #b8d4f5 38%, #97bdec 72%, #86b0e6 100%);
+  transform: translate3d(calc(var(--ox, 0px) * 0.35), calc(var(--oy, 0px) * 0.35), 0);
+}
+
+.hero-backdrop__streaks {
+  background: repeating-linear-gradient(
+    -23deg,
+    rgba(255, 255, 255, 0.78) 0px,
+    rgba(255, 255, 255, 0.78) 38px,
+    rgba(255, 255, 255, 0) 38px,
+    rgba(255, 255, 255, 0) 132px
+  );
+  filter: blur(19px);
+  opacity: 0.9;
+  transform: translate3d(var(--ox, 0px), var(--oy, 0px), 0);
+}
+
+/* Site chrome recedes while the warp transition owns the screen */
+header {
+  transition: opacity 0.5s var(--cubic-66);
+}
+
+/* toggleAttribute writes an empty value, so match on presence, not "1" */
+html[data-warping] header {
+  opacity: 0;
+  pointer-events: none;
+}
+
+:focus-visible {
+  outline: 2px solid var(--selection);
+  outline-offset: 3px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+  .grain {
+    animation: none;
+  }
+}
+
+::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
