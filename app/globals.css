@@ -412,23 +412,24 @@ canvas {
 }
 
 .hero-backdrop__wash {
-  /* A real blue across the whole frame, with the light coming from the
-     top-left. Kept light enough through the centre that the glass wordmark
-     still reads against it. */
+  /* A real blue across the whole frame. The highlight position and the sweep
+     angle are variables so each visit can be generated fresh (no two loads
+     look identical) while the palette stays fixed. */
   background:
-    radial-gradient(80% 70% at 18% 4%, rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 62%),
-    radial-gradient(90% 80% at 82% 96%, rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 58%),
-    linear-gradient(162deg, #d8e9fc 0%, #b8d4f5 38%, #97bdec 72%, #86b0e6 100%);
+    radial-gradient(80% 70% at var(--wx, 18%) var(--wy, 4%), rgba(255, 255, 255, 0.9) 0%, rgba(255, 255, 255, 0) 62%),
+    radial-gradient(90% 80% at var(--wx2, 82%) var(--wy2, 96%), rgba(255, 255, 255, 0.55) 0%, rgba(255, 255, 255, 0) 58%),
+    linear-gradient(var(--wa, 162deg), #d8e9fc 0%, #b8d4f5 38%, #97bdec 72%, #86b0e6 100%);
   transform: translate3d(calc(var(--ox, 0px) * 0.35), calc(var(--oy, 0px) * 0.35), 0);
 }
 
 .hero-backdrop__streaks {
+  /* Angle and band spacing are randomised per load too. */
   background: repeating-linear-gradient(
-    -23deg,
+    var(--sa, -23deg),
     rgba(255, 255, 255, 0.78) 0px,
-    rgba(255, 255, 255, 0.78) 38px,
-    rgba(255, 255, 255, 0) 38px,
-    rgba(255, 255, 255, 0) 132px
+    rgba(255, 255, 255, 0.78) var(--sg, 38px),
+    rgba(255, 255, 255, 0) var(--sg, 38px),
+    rgba(255, 255, 255, 0) calc(var(--sg, 38px) * 3.47)
   );
   filter: blur(19px);
   opacity: 0.9;

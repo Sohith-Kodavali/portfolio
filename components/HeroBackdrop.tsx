@@ -12,6 +12,21 @@ import { stage } from "@/lib/zoom";
 export default function HeroBackdrop() {
   const root = useRef<HTMLDivElement>(null);
 
+  // Generate the light once per visit: highlight positions, sweep angle and
+  // band spacing all shift, so the backdrop never repeats exactly.
+  useEffect(() => {
+    const el = root.current;
+    if (!el) return;
+    const r = (a: number, b: number) => a + Math.random() * (b - a);
+    el.style.setProperty("--wx", `${r(6, 30).toFixed(1)}%`);
+    el.style.setProperty("--wy", `${r(-6, 14).toFixed(1)}%`);
+    el.style.setProperty("--wx2", `${r(70, 96).toFixed(1)}%`);
+    el.style.setProperty("--wy2", `${r(84, 104).toFixed(1)}%`);
+    el.style.setProperty("--wa", `${r(148, 178).toFixed(0)}deg`);
+    el.style.setProperty("--sa", `${r(-31, -15).toFixed(0)}deg`);
+    el.style.setProperty("--sg", `${r(30, 48).toFixed(0)}px`);
+  }, []);
+
   useEffect(() => {
     if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
 

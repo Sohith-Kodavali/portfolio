@@ -2,15 +2,73 @@
 
 import { useEffect, useRef } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { gsap, registerGsap } from "@/lib/gsap";
 import { projects } from "@/lib/data";
 import { setThemeFromProject, clearTheme } from "@/lib/theme";
 import MorphHeading from "./MorphHeading";
 import Reveal from "./Reveal";
 import DistortImage from "./DistortImage";
+import Parallax from "./Parallax";
 
 export default function Work() {
   const list = useRef<HTMLDivElement>(null);
+  const router = useRouter();
+
+  /**
+   * Fly into the image rather than cutting to a new page: a copy of the
+   * thumbnail grows from exactly where it sits until it fills the viewport,
+   * the route changes behind it, then it dissolves into the case study.
+   * Transform-only, so it stays on the compositor.
+   */
+  const flyIn = (e: React.MouseEvent<HTMLAnchorElement>, slug: string) => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const media = e.currentTarget.querySelector<HTMLElement>("[data-media]");
+    const img = media?.querySelector("img");
+    if (!media || !img) return;
+
+    e.preventDefault();
+    const rect = media.getBoundingClientRect();
+    const src = img.getAttribute("src") ?? "";
+    if (!src || rect.width === 0) return;
+
+    const overlay = document.createElement("div");
+    overlay.setAttribute("aria-hidden", "true");
+    Object.assign(overlay.style, {
+      position: "fixed",
+      left: `${rect.left}px`,
+      top: `${rect.top}px`,
+      width: `${rect.width}px`,
+      height: `${rect.height}px`,
+      zIndex: "600",
+      pointerEvents: "none",
+      backgroundImage: `url("${src}")`,
+      backgroundSize: "cover",
+      backgroundPosition: "center",
+      transformOrigin: "center center",
+      willChange: "transform, opacity"
+    });
+    document.body.appendChild(overlay);
+
+    const scale =
+      Math.max(window.innerWidth / rect.width, window.innerHeight / rect.height) * 1.06;
+    const dx = window.innerWidth / 2 - (rect.left + rect.width / 2);
+    const dy = window.innerHeight / 2 - (rect.top + rect.height / 2);
+
+    gsap
+      .timeline({
+        onComplete: () => {
+          router.push(`/work/${slug}`);
+          gsap.to(overlay, {
+            autoAlpha: 0,
+            duration: 0.45,
+            ease: "power2.out",
+            onComplete: () => overlay.remove()
+          });
+        }
+      })
+      .to(overlay, { x: dx, y: dy, scale, duration: 0.8, ease: "expo.inOut" });
+  };
 
   useEffect(() => {
     registerGsap();
@@ -41,12 +99,14 @@ export default function Work() {
 
   return (
     <section id="work" data-grade="none" className="shell pt-[16vh] pb-[8vh]">
+      <Parallax speed={0.05}>
       <header className="grid grid-cols-12 gap-x-4 gap-y-6 pb-[12vh]">
         <span className="col-span-12 t-eyebrow lg:col-span-3">Selected work / 01—05</span>
         <MorphHeading className="col-span-12 t-lg lg:col-span-8" wdth={[98, 120]}>
           Work built to make the right people stop.
         </MorphHeading>
       </header>
+      </Parallax>
 
       <div ref={list} onMouseLeave={clearTheme} className="flex flex-col gap-[14vh]">
         {projects.map((p, i) => (
@@ -55,6 +115,7 @@ export default function Work() {
             href={`/work/${p.slug}`}
             data-row
             onMouseEnter={() => setThemeFromProject(p.colors)}
+            onClick={(e) => flyIn(e, p.slug)}
             data-cursor="View case"
             className={`group block ${i % 2 === 1 ? "lg:pl-[10%]" : ""}`}
           >
