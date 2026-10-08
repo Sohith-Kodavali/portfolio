@@ -6,6 +6,8 @@ import Cursor from "@/components/Cursor";
 import Loader from "@/components/Loader";
 import ScrollProgress from "@/components/ScrollProgress";
 import GridOverlay from "@/components/GridOverlay";
+import RouteTransition from "@/components/RouteTransition";
+import WorkAssistant from "@/components/WorkAssistant";
 import { ThemeProvider } from "@/lib/useTheme";
 
 export const metadata: Metadata = {
@@ -77,10 +79,12 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <ThemeProvider>
           <GridOverlay />
           <div className="grain" aria-hidden />
+          <RouteTransition />
           <Loader />
           <ScrollProgress />
           <Cursor />
           <SmoothScroll>{children}</SmoothScroll>
+          <WorkAssistant />
         </ThemeProvider>
       </body>
     </html>
