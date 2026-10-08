@@ -49,7 +49,8 @@ export default function ColorGrade() {
         el.style.opacity = "0";
       } else {
         el.style.backgroundColor = colour;
-        el.style.opacity = "1";
+        // Single knob for how strongly the page is graded.
+        el.style.opacity = "0.34";
       }
     };
 

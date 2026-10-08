@@ -220,7 +220,14 @@ export default function ShellCanvas() {
   }, []);
 
   return (
-    <div className="pointer-events-none fixed inset-0 z-0" aria-hidden>
+    // Hidden outright when the shell is paused: `frameloop="never"` stops
+    // useFrame, so whatever the pointer's last state was would otherwise stay
+    // frozen on screen (e.g. after a jump-scroll straight past the hero).
+    <div
+      className="pointer-events-none fixed inset-0 z-0"
+      style={{ opacity: active ? 1 : 0 }}
+      aria-hidden
+    >
       <Canvas
         frameloop={active ? "always" : "never"}
         dpr={quality.dpr}

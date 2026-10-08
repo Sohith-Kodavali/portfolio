@@ -449,7 +449,10 @@ canvas {
   inset: 0;
   z-index: 150;
   pointer-events: none;
-  mix-blend-mode: soft-light;
+  /* `color` takes the tint's hue + saturation and keeps the page's brightness.
+     soft-light was the wrong tool here: on a near-white page it resolves to
+     almost no change at any colour, which is why the grade was invisible. */
+  mix-blend-mode: color;
   opacity: 0;
   transition: background-color 0.9s var(--cubic-66), opacity 0.9s var(--cubic-66);
 }
