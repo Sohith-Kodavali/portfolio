@@ -1,17 +1,9 @@
 import type { MetadataRoute } from "next";
-import { projects } from "@/lib/data";
 
 const base = "https://example.com";
 
+// One page. The work cards link out to each project's own live site, so there
+// are no case-study routes to list.
 export default function sitemap(): MetadataRoute.Sitemap {
-  const now = new Date();
-  return [
-    { url: base, lastModified: now, changeFrequency: "monthly", priority: 1 },
-    ...projects.map((p) => ({
-      url: `${base}/work/${p.slug}`,
-      lastModified: now,
-      changeFrequency: "yearly" as const,
-      priority: 0.8
-    }))
-  ];
+  return [{ url: base, lastModified: new Date(), changeFrequency: "monthly", priority: 1 }];
 }

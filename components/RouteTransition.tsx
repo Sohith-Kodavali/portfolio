@@ -11,9 +11,9 @@ type DocWithVT = Document & {
  * Turns every internal navigation into a view transition, so routes cross-fade
  * as one continuous space instead of cutting.
  *
- * Native listener on `document`, so it runs *after* React's handlers — links
- * that manage their own transition (the work cards' fly-into-image) have
- * already called preventDefault and are skipped here.
+ * Native listener on `document`, so it runs *after* React's handlers — a link
+ * that manages its own transition is skipped, since it will already have
+ * called preventDefault.
  *
  * Progressive: browsers without the API simply navigate as before.
  */

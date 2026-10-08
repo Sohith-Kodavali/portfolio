@@ -32,13 +32,14 @@ pnpm clean      # remove .next (needed when switching between build and dev)
 | Global systems (cursor, loader, smooth scroll, progress) | `components/*.tsx` |
 | WebGL shell (wordmark, pointer, particles) + adaptive quality | `components/ShellCanvas.tsx`, `components/WordText.tsx`, `lib/quality.ts` |
 | Home sections | `components/Hero.tsx`, `Work.tsx`, `Capabilities.tsx`, `About.tsx`, `Testimonials.tsx`, `Contact.tsx` |
-| Case study page | `app/work/[slug]/page.tsx`, `components/CaseStudy.tsx` |
 | Project images | `public/work/*` |
 
 ## Swapping in real content
 
 1. **Text & projects** — edit `lib/data.ts`. Project `colors` (c1/c2/freq/warp) drive the WebGL
-   palette change on hover; the case studies auto-generate from the same array.
+   palette change on hover, and `url` is the live site the card opens in a new tab. The site is a
+   single page — there are no case-study routes, so a project with no `url` renders as a plain
+   (non-clickable) card rather than a dead link.
 2. **Images** — drop them in `public/work/`. **Use `.webp`**: run `pnpm images` and it compresses
    everything in that folder and writes a `.webp` next to each file, then point `image` in
    `lib/data.ts` at the `.webp`. (The first real image, `vexon`, went from 1.9 MB as a PNG to

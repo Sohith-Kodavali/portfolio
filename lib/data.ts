@@ -53,11 +53,14 @@ export type Project = {
   stack: readonly string[];
   outcome: string;
   image: string;
+  url?: string;
   colors: { c1: [number, number, number]; c2: [number, number, number]; freq: number; warp: number };
 };
 
 // Project names are final. Copy, imagery and results are still placeholders —
-// swap them once the real case-study material lands.
+// swap them once the real case-study material lands. Each card links out to the
+// live site, so no case-study page is generated. `url` is optional: a project
+// without one renders as a plain card rather than a dead link.
 export const projects: Project[] = [
   {
     idx: "01",
@@ -71,6 +74,7 @@ export const projects: Project[] = [
     stack: ["HTML5", "CSS3", "JavaScript"],
     outcome: "Case study to be written.",
     image: "/work/rrkfoods.svg",
+    url: "https://rrkfoods.in",
     colors: { c1: [0.96, 0.26, 0.15], c2: [0.1, 0.04, 0.03], freq: 2.2, warp: 1.6 }
   },
   {
@@ -85,6 +89,7 @@ export const projects: Project[] = [
     stack: ["HTML5", "CSS3", "JavaScript"],
     outcome: "Case study to be written.",
     image: "/work/techyuva.svg",
+    url: "https://techyuva.in",
     colors: { c1: [0.16, 0.8, 0.66], c2: [0.02, 0.1, 0.09], freq: 2.8, warp: 2.0 }
   },
   {
@@ -99,6 +104,7 @@ export const projects: Project[] = [
     stack: ["Next.js", "React", "Three.js", "Framer Motion"],
     outcome: "Case study to be written.",
     image: "/work/vexon.webp",
+    url: "https://vexonsol.com",
     colors: { c1: [0.26, 0.54, 0.98], c2: [0.02, 0.04, 0.11], freq: 3.0, warp: 1.5 }
   },
   {
@@ -113,6 +119,7 @@ export const projects: Project[] = [
     stack: ["HTML5", "CSS3", "JavaScript"],
     outcome: "Case study to be written.",
     image: "/work/zyppyn.svg",
+    url: "https://zyppyn.com",
     colors: { c1: [0.48, 0.7, 0.96], c2: [0.03, 0.06, 0.11], freq: 2.4, warp: 1.6 }
   },
   {

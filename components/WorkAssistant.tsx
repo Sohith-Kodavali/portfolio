@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Link from "next/link";
 import { projects, profile } from "@/lib/data";
 import { cn } from "@/lib/utils";
 
@@ -32,7 +31,7 @@ const INTENTS: { keys: string[]; answer: () => Turn }[] = [
     keys: ["who", "about", "yourself", "you", "background", "experience"],
     answer: () => ({
       role: "site",
-      text: `${profile.name} — ${profile.role}. ${profile.discipline}. Five projects are written up here; ask about any of them.`
+      text: `${profile.name} — ${profile.role}. ${profile.discipline}. Five projects are live here; ask about any of them.`
     })
   }
 ];
@@ -67,7 +66,7 @@ function respond(q: string): Turn {
     return {
       role: "site",
       text: `${p.name} — ${p.category}. ${p.summary}\n\nScope: ${p.scope.join(", ")}. Stack: ${p.stack.join(", ")}.`,
-      href: `/work/${p.slug}`
+      href: p.url
     };
   }
 
@@ -138,13 +137,14 @@ export default function WorkAssistant() {
               </p>
               {t.href && (
                 <div className="mt-2">
-                  <Link
+                  <a
                     href={t.href}
-                    onClick={() => setOpen(false)}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="u-dot font-mono text-[10px] uppercase tracking-[0.14em] text-accent"
                   >
-                    Open case study ↗
-                  </Link>
+                    Visit live site ↗
+                  </a>
                 </div>
               )}
             </div>
