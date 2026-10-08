@@ -3,15 +3,19 @@
 import { useEffect, useMemo, useRef } from "react";
 import { useFrame, useLoader, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-// Font/TextGeometry live in three's addons (not the main entry) as of r170.
-import { Font } from "three/examples/jsm/loaders/FontLoader.js";
+// FontLoader reads a pre-baked typeface JSON (see scripts/make-font.mjs, `pnpm
+// font`). TTFLoader is deliberately not used: as of r186 it imports opentype.js
+// from a jsDelivr URL, which webpack cannot resolve and which fails the build.
+// The JSON is also subsetted to these six glyphs — ~6 KB against a 322 KB TTF,
+// with no runtime font parsing.
+import { FontLoader } from "three/examples/jsm/loaders/FontLoader.js";
 import { TextGeometry } from "three/examples/jsm/geometries/TextGeometry.js";
-import { TTFLoader } from "three/examples/jsm/loaders/TTFLoader.js";
 import { createSparkleMaps } from "@/lib/sparkle";
 
-// A rounded brush script, parsed into typeface JSON at runtime by three's
-// TTFLoader. Its rounded strokes give the inflated, tubular read.
-const FONT_URL = "/fonts/Pacifico-Regular.ttf";
+// A rounded brush script. Its rounded strokes give the inflated, tubular read.
+const FONT_URL = "/fonts/pacifico-sohith.json";
+const WORD = "sohith";
+const NORMAL_SCALE = new THREE.Vector2(0.5, 0.5);
 
 export default function WordText({
   dark,
@@ -27,12 +31,10 @@ export default function WordText({
   const wobble = useRef({ value: 0 });
   const { pointer } = useThree();
 
-  const fontData = useLoader(TTFLoader, FONT_URL);
+  const font = useLoader(FontLoader, FONT_URL);
 
   const shaped = useMemo(() => {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const font = new Font(fontData as any);
-    const geo = new TextGeometry("sohith", {
+    const geo = new TextGeometry(WORD, {
       font,
       size: 1.15,
       depth: 0.2,
@@ -49,7 +51,7 @@ export default function WordText({
     const box = geo.boundingBox;
     const h = box ? box.max.y - box.min.y : 1;
     return { geometry: geo, height: h };
-  }, [fontData]);
+  }, [font]);
 
   const sparkle = useMemo(() => createSparkleMaps(512, 7), []);
 
@@ -113,7 +115,7 @@ export default function WordText({
             iridescenceThicknessRange={[100, 1400]}
             roughnessMap={sparkle.roughnessMap}
             normalMap={sparkle.normalMap}
-            normalScale={new THREE.Vector2(0.5, 0.5)}
+            normalScale={NORMAL_SCALE}
           />
         </mesh>
 

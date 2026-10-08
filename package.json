@@ -8,29 +8,29 @@
     "start": "next start",
     "typecheck": "tsc --noEmit",
     "clean": "node -e \"require('fs').rmSync('.next',{recursive:true,force:true})\"",
-    "images": "node scripts/optimise-images.mjs"
+    "images": "node scripts/optimise-images.mjs",
+    "font": "node scripts/make-font.mjs"
   },
   "dependencies": {
-    "@react-three/drei": "^10.0.0",
-    "@react-three/fiber": "^9.0.0",
-    "@react-three/postprocessing": "^3.0.0",
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.1",
     "clsx": "^2.1.1",
     "gsap": "^3.12.5",
     "lenis": "^1.1.20",
     "next": "^15.1.0",
-    "postprocessing": "^6.36.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "tailwind-merge": "^2.6.0",
-    "three": "^0.170.0"
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.0.0",
     "@types/node": "^22.10.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
-    "@types/three": "^0.170.0",
+    "@types/three": "^0.186.0",
     "cross-env": "^10.1.0",
+    "opentype.js": "^2.0.0",
     "postcss": "^8.4.49",
     "sharp": "^0.35.5",
     "tailwindcss": "^4.0.0",
