@@ -9,9 +9,11 @@ type Props = {
   className?: string;
   as?: "h1" | "h2" | "h3" | "p" | "div";
   /** width axis at the start / end of the scroll range */
-  wdth?: [number, number];
+  wdthFrom?: number;
+  wdthTo?: number;
   /** weight axis at the start / end of the scroll range */
-  wght?: [number, number];
+  wghtFrom?: number;
+  wghtTo?: number;
 };
 
 /**
@@ -26,8 +28,14 @@ export default function MorphHeading({
   children,
   className,
   as = "h2",
-  wdth = [96, 118],
-  wght = [700, 880]
+  // Scalar props, not arrays: an array default is a new object on every render,
+  // and as an effect dependency it tore down and rebuilt the ScrollTriggers
+  // each time — which replayed the wipe on any section that re-renders (the
+  // About section, whose live clock ticks every second).
+  wdthFrom = 96,
+  wdthTo = 118,
+  wghtFrom = 700,
+  wghtTo = 880
 }: Props) {
   const ref = useRef<HTMLElement>(null);
 
@@ -59,8 +67,8 @@ export default function MorphHeading({
       end: "bottom 35%",
       scrub: true,
       onUpdate: (self) => {
-        const w = wdth[0] + (wdth[1] - wdth[0]) * self.progress;
-        const g = wght[0] + (wght[1] - wght[0]) * self.progress;
+        const w = wdthFrom + (wdthTo - wdthFrom) * self.progress;
+        const g = wghtFrom + (wghtTo - wghtFrom) * self.progress;
         el.style.fontVariationSettings = `"wdth" ${w.toFixed(1)}, "wght" ${g.toFixed(0)}`;
       }
     });
@@ -69,7 +77,7 @@ export default function MorphHeading({
       wipe.kill();
       morph.kill();
     };
-  }, [wdth, wght]);
+  }, [wdthFrom, wdthTo, wghtFrom, wghtTo]);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const Tag = as as any;
@@ -77,7 +85,7 @@ export default function MorphHeading({
     <Tag
       ref={ref}
       className={cn("t-display", className)}
-      style={{ fontVariationSettings: `"wdth" ${wdth[0]}, "wght" ${wght[0]}` }}
+      style={{ fontVariationSettings: `"wdth" ${wdthFrom}, "wght" ${wghtFrom}` }}
     >
       {children}
     </Tag>

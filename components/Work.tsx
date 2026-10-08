@@ -102,7 +102,7 @@ export default function Work() {
       <Parallax speed={0.05}>
       <header className="grid grid-cols-12 gap-x-4 gap-y-6 pb-[12vh]">
         <span className="col-span-12 t-eyebrow lg:col-span-3">Selected work / 01—05</span>
-        <MorphHeading className="col-span-12 t-lg lg:col-span-8" wdth={[98, 120]}>
+        <MorphHeading className="col-span-12 t-lg lg:col-span-8" wdthFrom={98} wdthTo={120}>
           Work built to make the right people stop.
         </MorphHeading>
       </header>
