@@ -56,77 +56,78 @@ export type Project = {
   colors: { c1: [number, number, number]; c2: [number, number, number]; freq: number; warp: number };
 };
 
-// Placeholder portfolio — swap names, copy, imagery and metrics for real work.
+// Project names are final. Copy, imagery and results are still placeholders —
+// swap them once the real case-study material lands.
 export const projects: Project[] = [
   {
     idx: "01",
-    slug: "meridian",
-    name: "Meridian",
-    category: "Fintech · Product",
+    slug: "rrkfoods",
+    name: "RRK Foods",
+    category: "Restaurant · Brand + Site",
     year: "2025",
     summary:
-      "A trading surface rebuilt around clarity — live data made calm, legible and fast under pressure.",
-    scope: ["Product design", "Design system", "Front-end engineering", "Motion"],
-    stack: ["Next.js", "TypeScript", "WebGL", "GSAP"],
-    outcome: "Time-to-insight down by a third in usability testing.",
-    image: "/work/meridian.svg",
-    colors: { c1: [0.78, 1.0, 0.24], c2: [0.04, 0.09, 0.06], freq: 2.6, warp: 1.8 }
+      "A food court with a following, given a site that sells the food before you taste it — menu, ordering and a voice that carries the brand.",
+    scope: ["Art direction", "Website", "Ordering flow", "Copy"],
+    stack: ["HTML5", "CSS3", "JavaScript"],
+    outcome: "Case study to be written.",
+    image: "/work/rrkfoods.svg",
+    colors: { c1: [0.96, 0.26, 0.15], c2: [0.1, 0.04, 0.03], freq: 2.2, warp: 1.6 }
   },
   {
     idx: "02",
-    slug: "halcyon",
-    name: "Halcyon",
-    category: "Hospitality · Brand",
+    slug: "techyuva",
+    name: "TechYuva",
+    category: "Community · Events",
     year: "2025",
     summary:
-      "An identity and booking experience for a coastal retreat — atmosphere you can almost feel through the screen.",
-    scope: ["Art direction", "Brand identity", "Website", "Photography direction"],
-    stack: ["Next.js", "Three.js", "Lenis", "Sanity"],
-    outcome: "Direct bookings up sharply against the previous season.",
-    image: "/work/halcyon.svg",
-    colors: { c1: [1.0, 0.36, 0.18], c2: [0.09, 0.05, 0.04], freq: 1.9, warp: 1.5 }
+      "A community hub built to fill rooms — events, workshops and a home for the people who actually show up.",
+    scope: ["Website", "Event pages", "Motion"],
+    stack: ["HTML5", "CSS3", "JavaScript"],
+    outcome: "Case study to be written.",
+    image: "/work/techyuva.svg",
+    colors: { c1: [0.16, 0.8, 0.66], c2: [0.02, 0.1, 0.09], freq: 2.8, warp: 2.0 }
   },
   {
     idx: "03",
-    slug: "northwind",
-    name: "Northwind",
-    category: "SaaS · Analytics",
-    year: "2024",
+    slug: "vexon",
+    name: "Vexon",
+    category: "Technology · Corporate",
+    year: "2025",
     summary:
-      "A data platform that makes dense numbers feel approachable — a system for charts, states and self-serve setup.",
-    scope: ["Design system", "Dashboard UX", "Front-end", "Data viz"],
-    stack: ["React", "TypeScript", "D3", "GSAP"],
-    outcome: "Onboarding completion up meaningfully after the rebuild.",
-    image: "/work/northwind.svg",
-    colors: { c1: [0.35, 0.62, 1.0], c2: [0.03, 0.06, 0.11], freq: 3.1, warp: 1.4 }
+      "A corporate platform for a technology and digital engineering firm — built to hold up with senior buyers, not just to look modern.",
+    scope: ["Art direction", "Design system", "Front-end", "Motion"],
+    stack: ["Next.js", "React", "Three.js", "Framer Motion"],
+    outcome: "Case study to be written.",
+    image: "/work/vexon.svg",
+    colors: { c1: [0.26, 0.54, 0.98], c2: [0.02, 0.04, 0.11], freq: 3.0, warp: 1.5 }
   },
   {
     idx: "04",
-    slug: "lumen",
-    name: "Lumen",
-    category: "Consumer · Mobile web",
+    slug: "zyppyn",
+    name: "Zyppyn",
+    category: "Product · Consumer",
     year: "2024",
     summary:
-      "A premium product story told in scroll — hardware rendered in real time, no video, no smoke and mirrors.",
-    scope: ["Creative direction", "WebGL", "Interaction design"],
-    stack: ["Next.js", "React Three Fiber", "GLSL", "GSAP"],
-    outcome: "Average session depth nearly doubled.",
-    image: "/work/lumen.svg",
-    colors: { c1: [0.86, 0.86, 0.9], c2: [0.06, 0.06, 0.08], freq: 2.2, warp: 1.7 }
+      "A pre-launch product story: premium display hardware introduced before anyone can buy it, with restraint instead of hype.",
+    scope: ["Creative direction", "Website", "Product narrative"],
+    stack: ["HTML5", "CSS3", "JavaScript"],
+    outcome: "Case study to be written.",
+    image: "/work/zyppyn.svg",
+    colors: { c1: [0.48, 0.7, 0.96], c2: [0.03, 0.06, 0.11], freq: 2.4, warp: 1.6 }
   },
   {
     idx: "05",
-    slug: "cobalt",
-    name: "Cobalt",
-    category: "B2B · Infrastructure",
-    year: "2023",
+    slug: "envirosys",
+    name: "Envirosys",
+    category: "Environment · Services",
+    year: "2024",
     summary:
-      "A developer-first marketing site that treats documentation as a first-class design surface.",
-    scope: ["Brand", "Marketing site", "Docs system", "Motion"],
-    stack: ["Next.js", "MDX", "GSAP", "Radix"],
-    outcome: "Sign-up conversion improved after launch.",
-    image: "/work/cobalt.svg",
-    colors: { c1: [0.2, 0.5, 0.95], c2: [0.02, 0.04, 0.1], freq: 2.9, warp: 2.0 }
+      "An environmental services company given a clearer, more credible front door — the work explained properly, for the people who commission it.",
+    scope: ["Website", "Information architecture", "Copy"],
+    stack: ["HTML5", "CSS3", "JavaScript"],
+    outcome: "Case study to be written.",
+    image: "/work/envirosys.svg",
+    colors: { c1: [0.4, 0.8, 0.36], c2: [0.03, 0.09, 0.05], freq: 2.1, warp: 1.7 }
   }
 ];
 
