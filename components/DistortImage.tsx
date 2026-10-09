@@ -338,7 +338,10 @@ export default function DistortImage({
       gl.uniform2f(c.uniforms.uVel, s.vx, -s.vy);
       gl.uniform1f(c.uniforms.uHover, s.hover);
       gl.uniform1f(c.uniforms.uTime, now / 1000);
-      gl.uniform1f(c.uniforms.uCurl, s.curl * 0.06);
+      // 0.06 was far too subtle to read as a bend — 6% compression at the extreme
+      // top and bottom, over an image that is mostly middle. This is a visible
+      // amount while still reading as a flex rather than a warp.
+      gl.uniform1f(c.uniforms.uCurl, s.curl * 0.22);
       gl.uniform1f(c.uniforms.uDevelop, s.develop);
       gl.uniform1f(c.uniforms.uReveal, s.hover);
       // Cell size in the same device pixels as uRes, or the squares would scale
