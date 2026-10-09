@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { onTick } from "@/lib/ticker";
 
 export default function Cursor() {
   const ring = useRef<HTMLDivElement>(null);
@@ -19,11 +20,12 @@ export default function Cursor() {
     let my = window.innerHeight / 2;
     let cx = mx;
     let cy = my;
-    let raf = 0;
+    let settled = false;
 
     const move = (e: MouseEvent) => {
       mx = e.clientX;
       my = e.clientY;
+      settled = false;
       if (ring.current) ring.current.style.opacity = "1";
     };
     const down = () => setPressed(true);
@@ -37,18 +39,35 @@ export default function Cursor() {
     window.addEventListener("mouseup", up);
     document.addEventListener("mouseleave", leave);
 
-    const loop = () => {
+    // On the shared ticker, and it stops writing once the lerp has caught up
+    // with the pointer — this used to re-write two transforms every frame for
+    // the whole life of the page, including while the mouse was completely still.
+    const stopTick = onTick(() => {
+      if (settled) return;
+
       cx += (mx - cx) * 0.16;
       cy += (my - cy) * 0.16;
+      if (Math.abs(mx - cx) < 0.05 && Math.abs(my - cy) < 0.05) {
+        cx = mx;
+        cy = my;
+        // One last write at the exact position, then park until the next move.
+        if (ring.current) {
+          ring.current.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
+        }
+        if (dot.current) {
+          dot.current.style.transform = `translate3d(${mx}px, ${my}px, 0) translate(-50%, -50%)`;
+        }
+        settled = true;
+        return;
+      }
+
       if (ring.current) {
         ring.current.style.transform = `translate3d(${cx}px, ${cy}px, 0) translate(-50%, -50%)`;
       }
       if (dot.current) {
         dot.current.style.transform = `translate3d(${mx}px, ${my}px, 0) translate(-50%, -50%)`;
       }
-      raf = requestAnimationFrame(loop);
-    };
-    raf = requestAnimationFrame(loop);
+    });
 
     const enter = (e: Event) => {
       const el = e.currentTarget as HTMLElement;
@@ -61,22 +80,32 @@ export default function Cursor() {
       if (label.current) label.current.textContent = "";
     };
 
+    // Coalesced: this used to run querySelectorAll over the whole document on
+    // *every* DOM mutation, and this page mutates constantly (GSAP, scroll
+    // reveals, route changes). Collapsing a burst into one pass per frame keeps
+    // the cost honest.
+    let attaching = false;
     const attach = () => {
-      document
-        .querySelectorAll<HTMLElement>("a, button, [data-cursor]")
-        .forEach((el) => {
-          if (el.dataset.cursorBound === "1") return;
-          el.dataset.cursorBound = "1";
-          el.addEventListener("mouseenter", enter);
-          el.addEventListener("mouseleave", clear);
-        });
+      attaching = false;
+      document.querySelectorAll<HTMLElement>("a, button, [data-cursor]").forEach((el) => {
+        if (el.dataset.cursorBound === "1") return;
+        el.dataset.cursorBound = "1";
+        el.addEventListener("mouseenter", enter);
+        el.addEventListener("mouseleave", clear);
+      });
     };
+    const scheduleAttach = () => {
+      if (attaching) return;
+      attaching = true;
+      requestAnimationFrame(attach);
+    };
+
     attach();
-    const obs = new MutationObserver(attach);
+    const obs = new MutationObserver(scheduleAttach);
     obs.observe(document.body, { childList: true, subtree: true });
 
     return () => {
-      cancelAnimationFrame(raf);
+      stopTick();
       window.removeEventListener("mousemove", move);
       window.removeEventListener("mousedown", down);
       window.removeEventListener("mouseup", up);

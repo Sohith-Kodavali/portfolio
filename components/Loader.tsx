@@ -6,7 +6,10 @@ import { getLenis } from "@/lib/scroll";
 
 export default function Loader() {
   const root = useRef<HTMLDivElement>(null);
-  const [count, setCount] = useState(0);
+  // Written straight to the DOM from the timeline. Driving this through React
+  // state re-rendered this entire component ~60x a second for two seconds, for
+  // a number whose only job is to animate.
+  const counterEl = useRef<HTMLSpanElement>(null);
   const [done, setDone] = useState(false);
 
   useEffect(() => {
@@ -57,7 +60,11 @@ export default function Loader() {
           v: 100,
           duration: 1.9,
           ease: "quint",
-          onUpdate: () => setCount(Math.round(counter.v))
+          onUpdate: () => {
+            if (counterEl.current) {
+              counterEl.current.textContent = String(Math.round(counter.v)).padStart(3, "0");
+            }
+          }
         },
         0.1
       )
@@ -102,7 +109,9 @@ export default function Loader() {
           </span>
         </h1>
         <div data-meta className="flex items-baseline gap-3 font-mono text-sm text-muted">
-          <span className="tabular-nums text-bone">{String(count).padStart(3, "0")}</span>
+          <span ref={counterEl} className="tabular-nums text-bone">
+            000
+          </span>
           <span>/</span>
           <span>100</span>
         </div>
