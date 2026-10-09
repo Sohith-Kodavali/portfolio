@@ -9,6 +9,10 @@ import { onTick } from "@/lib/ticker";
 const CELL = 16;
 const HISTORY = 14;
 const LIME = "192, 254, 4";
+// How long a cell stays visible, in ms. Without this the trail only ever dropped
+// cells when a new one pushed the oldest out — so stopping the pointer left the
+// trail frozen on screen indefinitely.
+const LIFETIME = 420;
 
 /**
  * The pointer trail.
@@ -51,7 +55,7 @@ export default function PointerTrail() {
     };
     resize();
 
-    const trail: { x: number; y: number }[] = [];
+    const trail: { x: number; y: number; t: number }[] = [];
     let px = -1;
     let py = -1;
     let inside = false;
@@ -74,33 +78,45 @@ export default function PointerTrail() {
     const clear = () => ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
     const stop = onTick(() => {
-      if (!inside || px < 0) {
-        // Nothing to draw, and nothing to erase once it is already gone.
-        if (dirty || trail.length) {
-          trail.length = 0;
+      const now = performance.now();
+
+      if (inside && px >= 0) {
+        const cx = Math.floor(px / CELL);
+        const cy = Math.floor(py / CELL);
+        const last = trail[trail.length - 1];
+        if (!last || last.x !== cx || last.y !== cy) {
+          trail.push({ x: cx, y: cy, t: now });
+        }
+      }
+
+      // Age out by time first. This is what makes the trail dissolve when the
+      // pointer stops, rather than waiting for the next movement to push it out.
+      while (trail.length && now - trail[0].t > LIFETIME) trail.shift();
+      while (trail.length > HISTORY) trail.shift();
+
+      if (!trail.length) {
+        if (dirty) {
           clear();
           dirty = false;
         }
         return;
       }
-
-      const cx = Math.floor(px / CELL);
-      const cy = Math.floor(py / CELL);
-      const last = trail[trail.length - 1];
-      if (!last || last.x !== cx || last.y !== cy) {
-        trail.push({ x: cx, y: cy });
-        if (trail.length > HISTORY) trail.shift();
-      }
+      dirty = true;
 
       clear();
+      const newest = trail.length;
       for (let i = 0; i < trail.length; i++) {
-        const age = (i + 1) / HISTORY; // newest = 1, oldest ≈ 1/14
-        const size = CELL * (0.3 + age * 0.7);
-        ctx.globalAlpha = age * 0.5;
+        const cell = trail[i];
+        // Fades over its own lifetime, brightest when newly laid down.
+        const life = 1 - (now - cell.t) / LIFETIME;
+        const recency = (i + 1) / newest;
+        const a = Math.max(0, life) * recency;
+        const size = CELL * (0.3 + a * 0.7);
+        ctx.globalAlpha = a * 0.7;
         ctx.fillStyle = `rgb(${LIME})`;
         ctx.fillRect(
-          trail[i].x * CELL + CELL / 2 - size / 2,
-          trail[i].y * CELL + CELL / 2 - size / 2,
+          cell.x * CELL + CELL / 2 - size / 2,
+          cell.y * CELL + CELL / 2 - size / 2,
           size,
           size
         );
