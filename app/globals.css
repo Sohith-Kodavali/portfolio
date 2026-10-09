@@ -356,6 +356,23 @@ canvas {
   opacity: 0.7;
 }
 
+/* Once the WebGL work layers are live, each card becomes a transparent hole so
+   the shell's image (drawn behind, in the shared canvas) shows through. The
+   placeholder stays in the layout for accessibility and as a fallback. */
+html.gpu-work-ready [data-media] {
+  background: transparent;
+  border-color: transparent;
+}
+
+html.gpu-work-ready [data-media]::before,
+html.gpu-work-ready [data-media]::after {
+  opacity: 0;
+}
+
+html.gpu-work-ready [data-media] img {
+  visibility: hidden;
+}
+
 /* ---------- Grain ---------- */
 .grain {
   position: fixed;

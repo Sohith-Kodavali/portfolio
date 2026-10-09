@@ -4,24 +4,15 @@ import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { Environment, Lightformer } from "@react-three/drei";
 import { Suspense, useEffect, useMemo, useRef, useState } from "react";
 import { THREE, createRenderer } from "@/lib/webgpu";
-import {
-  attribute,
-  cos,
-  exp,
-  float,
-  positionLocal,
-  sin,
-  uniform,
-  vec2,
-  vec4,
-  vec3
-} from "three/tsl";
 import { useQuality } from "@/lib/quality";
 import { useTheme } from "@/lib/useTheme";
 import { getScrollY } from "@/lib/scroll";
 import { readSectionLayout, scrollSyncedWorldY, type SectionLayout } from "@/lib/sectionAnchor";
+import { usePointerBus, getPointer } from "@/lib/pointer";
 import { stage } from "@/lib/zoom";
 import WordText from "./WordText";
+import WorkLayers from "./WorkLayers";
+import StickerField from "./StickerField";
 import Effects from "./Effects";
 
 const WORD_Y = 0.45;
@@ -33,6 +24,32 @@ const EMBER = new THREE.Color("#050505");
 
 const clamp = (v: number, a: number, b: number) => Math.min(Math.max(v, a), b);
 const seg = (p: number, a: number, b: number) => clamp((p - a) / (b - a), 0, 1);
+
+/**
+ * The key light, constrained to a circle around the wordmark.
+ *
+ * Its angle follows the pointer, but never its distance — so the highlight
+ * travels the rim instead of drifting onto the face of the glass and flattening
+ * the silhouette. Angles are damped along the shortest arc, or crossing ±π
+ * would send the highlight the long way round.
+ */
+function RimLight() {
+  const light = useRef<THREE.DirectionalLight>(null);
+  const radius = Math.hypot(4, 9);
+  const restAngle = Math.atan2(9, 4);
+  const angle = useRef(restAngle);
+
+  useFrame((_, delta) => {
+    const p = getPointer();
+    const target = p.inside ? Math.atan2(p.uv.y * 2 - 1, p.uv.x * 2 - 1) : restAngle;
+    const shortest = Math.atan2(Math.sin(target - angle.current), Math.cos(target - angle.current));
+    angle.current += shortest * (1 - Math.exp(-6 * delta));
+    const l = light.current;
+    if (l) l.position.set(radius * Math.cos(angle.current), radius * Math.sin(angle.current), 3);
+  });
+
+  return <directionalLight ref={light} position={[4, 9, 3]} intensity={2.6} />;
+}
 
 function Lighting({ dark }: { dark: boolean }) {
   return (
@@ -48,7 +65,7 @@ function Lighting({ dark }: { dark: boolean }) {
         <Lightformer intensity={3} position={[0, -7, 5]} scale={[14, 14, 1]} color="#ffffff" />
       </Environment>
       <ambientLight intensity={dark ? 0.35 : 0.55} />
-      <directionalLight position={[6, 9, 4]} intensity={dark ? 2.0 : 2.6} />
+      <RimLight />
       <directionalLight position={[-6, 4, -6]} intensity={dark ? 1.2 : 1.6} color="#a9c8ff" />
     </>
   );
@@ -168,145 +185,6 @@ function WordDriver({
     <group ref={group}>
       <WordText dark={dark} y={0} glass={glass} />
     </group>
-  );
-}
-
-/**
- * Fine grains drifting through the hero, brushed aside by the cursor.
- *
- * Written in TSL rather than GLSL. A raw ShaderMaterial would compile on the
- * WebGL2 fallback backend and silently render nothing under WebGPU; TSL is
- * authored once and compiles to WGSL or GLSL depending on the active backend.
- */
-function ParticleField({
-  count,
-  dark,
-  active
-}: {
-  count: number;
-  dark: boolean;
-  active: boolean;
-}) {
-  const { pointer } = useThree();
-
-  const { positions, randoms } = useMemo(() => {
-    const n = Math.max(4000, Math.min(count, 60000));
-    const pos = new Float32Array(n * 3);
-    const rnd = new Float32Array(n * 3);
-    for (let i = 0; i < n; i++) {
-      pos[i * 3] = Math.random() * 2 - 1;
-      pos[i * 3 + 1] = Math.random() * 2 - 1;
-      pos[i * 3 + 2] = Math.random() * 2 - 1;
-      rnd[i * 3] = Math.random();
-      rnd[i * 3 + 1] = Math.random();
-      rnd[i * 3 + 2] = Math.random();
-    }
-    return { positions: pos, randoms: rnd };
-  }, [count]);
-
-  const uniforms = useMemo(
-    () => ({
-      uTime: uniform(0),
-      uSize: uniform(1.4),
-      uDpr: uniform(typeof window === "undefined" ? 1 : Math.min(window.devicePixelRatio, 1.5)),
-      uMouse: uniform(new THREE.Vector2(0, 0)),
-      uColor: uniform(new THREE.Color("#5b7fb8"))
-    }),
-    []
-  );
-
-  // Soft round grains.
-  //
-  // This is a texture rather than maths on `pointUV`, deliberately. three's
-  // pointUV node emits GLSL's `gl_PointCoord` — and it emits it into the WGSL
-  // output too, where that identifier does not exist, so the shader fails to
-  // compile on the WebGPU backend with:
-  //     WGSL error: unresolved value 'gl_PointCoord'
-  // The WebGL2 fallback hides it completely, which is how it survived review.
-  // A radial sprite sampled through `map` goes through three's own cross-backend
-  // plumbing instead, so it compiles on both.
-  const sprite = useMemo(() => {
-    if (typeof document === "undefined") return null;
-    const size = 64;
-    const c = document.createElement("canvas");
-    c.width = c.height = size;
-    const g = c.getContext("2d");
-    if (!g) return null;
-    // RGB must fall off to *black*, not to transparent. The field blends
-    // additively, so a sprite that stays white with a fading alpha still adds a
-    // full white square per grain — which is exactly what it looked like. With
-    // the brightness falling to black the edges contribute nothing and the
-    // grains read as soft round dots.
-    const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
-    grad.addColorStop(0, "rgba(255,255,255,1)");
-    grad.addColorStop(0.35, "rgba(150,150,150,1)");
-    grad.addColorStop(1, "rgba(0,0,0,1)");
-    g.fillStyle = grad;
-    g.fillRect(0, 0, size, size);
-    const t = new THREE.CanvasTexture(c);
-    t.colorSpace = THREE.NoColorSpace;
-    // No mipmaps: point sprites sample a single texel region and mip selection
-    // at these sizes just softens them into mush.
-    t.generateMipmaps = false;
-    t.minFilter = THREE.LinearFilter;
-    return t;
-  }, []);
-
-  const material = useMemo(() => {
-    const { uTime, uSize, uDpr, uMouse, uColor } = uniforms;
-    const aRandom = attribute("aRandom", "vec3");
-
-    const amp = aRandom.x.mul(0.1).add(0.05);
-    const flow = vec3(
-      sin(positionLocal.y.mul(1.6).add(uTime.mul(0.3)).add(aRandom.x.mul(6.2831))),
-      cos(positionLocal.x.mul(1.4).sub(uTime.mul(0.26)).add(aRandom.y.mul(6.2831))),
-      float(0)
-    );
-
-    const x = positionLocal.x.add(flow.x.mul(amp));
-    // Wraps through [-1, 1] so the field never runs out of grains.
-    const y = positionLocal.y
-      .add(flow.y.mul(amp))
-      .add(uTime.mul(aRandom.y.mul(0.012).add(0.006)))
-      .add(1)
-      .mod(2)
-      .sub(1);
-
-    // Shove grains away from the cursor, then let them drift back.
-    const d = vec2(x, y).sub(uMouse);
-    const push = exp(d.length().mul(-5)).mul(0.14);
-    const off = d.mul(push).div(d.length().add(1e-4));
-
-    const m = new THREE.PointsNodeMaterial();
-    m.positionNode = vec3(x.add(off.x), y.add(off.y), positionLocal.z);
-    m.sizeNode = uSize.mul(uDpr).mul(aRandom.z.mul(0.9).add(0.35));
-    m.colorNode = vec4(uColor, 1);
-    m.opacityNode = aRandom.x.mul(0.38).add(0.08);
-    if (sprite) m.map = sprite;
-    m.transparent = true;
-    m.depthTest = false;
-    m.depthWrite = false;
-    m.blending = THREE.AdditiveBlending;
-    return m;
-  }, [uniforms, sprite]);
-
-  useEffect(() => {
-    uniforms.uColor.value.set(dark ? "#8fb4ff" : "#5b7fb8");
-  }, [dark, uniforms]);
-
-  useFrame((state, delta) => {
-    if (!active) return;
-    uniforms.uTime.value = state.clock.elapsedTime;
-    uniforms.uMouse.value.lerp(pointer, 1 - Math.pow(0.002, delta));
-  });
-
-  return (
-    <points frustumCulled={false} renderOrder={-1} material={material}>
-      <bufferGeometry>
-        <bufferAttribute attach="attributes-position" args={[positions, 3]} />
-        <bufferAttribute attach="attributes-aRandom" args={[randoms, 3]} />
-      </bufferGeometry>
-    </points>
   );
 }
 
@@ -447,17 +325,26 @@ export default function ShellCanvas() {
   const { mode } = useTheme();
   const scroll = useRef(0);
   const dark = mode === "dark";
+  usePointerBus();
   // Transmission costs an extra full-scene pass per frame — only enable it on
   // machines that can take it.
   const glass = quality.fx;
 
-  // Nothing here is visible once the hero has scrolled away and the transition
-  // is idle, so stop rendering entirely rather than burning a frame every 16ms.
+  // The shell renders only while it has something to show: the hero, the work
+  // section (whose images are drawn here), or the warp transition. Everywhere
+  // else it stops rather than burning a frame every 16ms.
   const [active, setActive] = useState(true);
   useEffect(() => {
     const evaluate = () => {
-      const nearTop = window.scrollY < window.innerHeight * 1.35;
-      const next = nearTop || stage.warping;
+      const vh = window.innerHeight;
+      const nearTop = window.scrollY < vh * 1.35;
+      const work = document.querySelector("#work");
+      let inWork = false;
+      if (work) {
+        const rect = work.getBoundingClientRect();
+        inWork = rect.bottom > -vh * 0.5 && rect.top < vh * 1.5;
+      }
+      const next = nearTop || inWork || stage.warping;
       setActive((prev) => (prev === next ? prev : next));
     };
     evaluate();
@@ -498,7 +385,9 @@ export default function ShellCanvas() {
         <CameraRig scroll={scroll} />
         <Lighting dark={dark} />
         <Suspense fallback={null}>
+          <StickerField dark={dark} />
           <WordDriver dark={dark} glass={glass} scroll={scroll} />
+          <WorkLayers />
         </Suspense>
         <PointerObject />
         <Effects tier={effectTier} />

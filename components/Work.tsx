@@ -6,7 +6,6 @@ import { projects } from "@/lib/data";
 import { setThemeFromProject, clearTheme } from "@/lib/theme";
 import MorphHeading from "./MorphHeading";
 import Reveal from "./Reveal";
-import DistortImage from "./DistortImage";
 import Parallax from "./Parallax";
 
 export default function Work() {
@@ -60,7 +59,13 @@ export default function Work() {
                 data-label={`${p.name} — image placeholder`}
               >
                 <div className="absolute inset-0 transition-transform duration-[1.4s] ease-[cubic-bezier(.66,0,.01,1)] group-hover:scale-[1.06]">
-                  <DistortImage src={p.image} alt={`${p.name} — ${p.category}`} />
+                  {/* Placeholder only — the image itself is drawn in the WebGL
+                      shell (WorkLayers), so the curl is a single page-wide
+                      effect rather than a separate canvas per card. Hidden via
+                      `html.gpu-work-ready` once those layers are live, so a
+                      texture failure leaves this visible rather than blank. */}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={p.image} alt={`${p.name} — ${p.category}`} className="h-full w-full object-cover" />
                 </div>
                 {p.url && (
                   <span className="absolute top-5 right-5 font-mono text-[10px] uppercase tracking-[0.14em] text-bone/70 opacity-0 transition-opacity duration-500 group-hover:opacity-100">

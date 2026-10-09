@@ -98,19 +98,29 @@ export default function WordText({
         <mesh geometry={shaped.geometry}>
           <meshPhysicalMaterial
             ref={liquidRef}
-            color="#92b5f6"
+            // Tinted so the light theme keeps a sense of thickness against a
+            // near-white page, per the reference's cyan-to-white absorption.
+            color={dark ? "#8fa4c4" : "#cfe6ff"}
             // Glass, not chrome. Full metal was tried and rejected: on a light
             // page it reads as flat silver in a light environment, or goes dark
             // in a contrasting one and fights the black headline.
             metalness={0}
-            roughness={0.22}
-            transmission={glass ? 0.85 : 0}
-            ior={1.2}
-            thickness={2}
+            roughness={dark ? 0.18 : 0.12}
+            // Real refraction: the transmission pass samples what is behind the
+            // word — which is exactly why the sticker field exists.
+            transmission={glass ? 1 : 0}
+            ior={1.18}
+            thickness={dark ? 1.4 : 1.8}
+            // Beer-Lambert absorption: the colour that survives transmission and
+            // how quickly it falls off with thickness.
+            attenuationColor={dark ? "#64c3ff" : "#009dff"}
+            attenuationDistance={dark ? 1.1 : 0.7}
+            // Chromatic dispersion — the colour fringing the reference is built on.
+            dispersion={dark ? 0.22 : 0.32}
             clearcoat={1}
             clearcoatRoughness={0.08}
-            envMapIntensity={1.5}
-            iridescence={1}
+            envMapIntensity={1.4}
+            iridescence={0.5}
             iridescenceIOR={1.4}
             iridescenceThicknessRange={[100, 1400]}
             roughnessMap={sparkle.roughnessMap}
