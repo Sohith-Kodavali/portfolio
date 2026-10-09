@@ -362,11 +362,10 @@ export default function ShellCanvas() {
     };
   }, []);
 
-  // Post-processing is built but held off: the scene pass renders to a texture
-  // without an alpha channel, so the transparent canvas comes back as opaque
-  // black and buries the light background. Effects stays wired and fail-safe;
-  // flip this on once the pass preserves alpha.
-  const POST_PROCESSING = false;
+  // Post-processing: bloom, depth of field, lens dispersion and grain.
+  // Effects stays fail-safe — if the pipeline cannot be built it falls back to a
+  // plain render rather than leaving a black canvas.
+  const POST_PROCESSING = true;
   const effectTier: "full" | "light" | "off" = !POST_PROCESSING || quality.reduced
     ? "off"
     : quality.fx

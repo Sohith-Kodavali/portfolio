@@ -3,7 +3,7 @@
 import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three/webgpu";
-import { pass } from "three/tsl";
+import { pass, vec4 } from "three/tsl";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
 
 export type EffectTier = "full" | "light" | "off";
@@ -35,6 +35,11 @@ export default function Effects({ tier }: { tier: EffectTier }) {
     if (tier === "off") return;
 
     try {
+      // The canvas is transparent and the page's light gradient lives *behind*
+      // it, so the pass has to carry alpha through. Without this the scene pass
+      // comes back opaque and buries the whole background in black.
+      gl.setClearAlpha(0);
+
       const scenePass = pass(scene, camera);
       const beauty = scenePass.getTextureNode();
 
@@ -43,7 +48,12 @@ export default function Effects({ tier }: { tier: EffectTier }) {
       const glow = bloom(beauty, tier === "full" ? 0.55 : 0.3, 0.62, 0.82);
 
       const p = new THREE.RenderPipeline(gl as never);
-      p.outputNode = beauty.add(glow);
+      // Take RGB from the bloom sum but alpha from the scene pass alone.
+      // `beauty.add(glow)` adds alpha too, and the bloom's alpha is 1 across the
+      // whole frame — so the empty regions came back opaque and buried the page's
+      // light gradient in black. Keeping the scene's alpha is what lets the
+      // transparent canvas stay transparent where there is no geometry.
+      p.outputNode = vec4(beauty.rgb.add(glow.rgb), beauty.a);
       pipeline.current = p;
     } catch (err) {
       console.warn("[effects] post-processing unavailable; rendering directly.", err);
