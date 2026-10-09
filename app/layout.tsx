@@ -3,6 +3,7 @@ import { display, serif, sans, mono } from "./fonts";
 import "./globals.css";
 import SmoothScroll from "@/components/SmoothScroll";
 import Cursor from "@/components/Cursor";
+import PointerTrail from "@/components/PointerTrail";
 import Loader from "@/components/Loader";
 import ScrollProgress from "@/components/ScrollProgress";
 import GridOverlay from "@/components/GridOverlay";
@@ -82,6 +83,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <RouteTransition />
           <Loader />
           <ScrollProgress />
+          <PointerTrail />
           <Cursor />
           <SmoothScroll>{children}</SmoothScroll>
           <WorkAssistant />
