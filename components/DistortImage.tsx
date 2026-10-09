@@ -24,6 +24,51 @@ const FRAG = /* glsl */ `
   uniform float uTime;
   uniform float uCurl;
   uniform float uDevelop;
+  uniform float uReveal;   // 0 -> 1 hover progress
+  uniform float uCellPx;   // dot-matrix cell size, in device pixels
+
+  /**
+   * Dot-matrix hover reveal.
+   *
+   * The screen is divided into fixed-size cells and a square grows inside each
+   * one, within a radius that expands from the centre of the card. Underneath
+   * the mask the image swaps to a lifted duotone version of itself, so hovering
+   * reads as the picture changing state rather than just brightening.
+   *
+   * The cell grid is measured in *screen* space, not card space — that is what
+   * makes the squares stay a constant size across cards of different widths,
+   * and what makes the pattern line up as it spreads between them.
+   *
+   * No fwidth() here: this is a WebGL1 context and derivatives need an extension,
+   * so the edge uses a fixed anti-alias width instead.
+   */
+  vec4 applyDotReveal(vec2 screenUv, vec2 localUv, vec3 base) {
+    vec2 cellSizeUv = vec2(max(2.0, uCellPx)) / max(uRes, vec2(1.0));
+    vec2 cellUv = fract(screenUv / cellSizeUv);
+    float squareDist = max(abs(cellUv.x - 0.5), abs(cellUv.y - 0.5));
+
+    // Card aspect, so the expanding radius stays circular on a 16:9 card.
+    float cardAspect = uRes.x / max(uRes.y, 1.0);
+    vec2 centered = localUv * 2.0 - 1.0;
+    centered.x *= cardAspect;
+    float distToCenter = length(centered);
+    float maxRadius = length(vec2(cardAspect, 1.0));
+
+    float progress = clamp(uReveal, 0.0, 1.0);
+    float radius = progress * (maxRadius + 0.12);
+    float grow = 1.0 - smoothstep(radius - 0.12, radius + 0.12, distToCenter);
+    grow *= step(0.0001, progress);
+
+    float extent = mix(0.0, 0.5, grow);
+    float aa = 0.01;
+    float mask = 1.0 - smoothstep(extent - aa, extent + aa, squareDist);
+
+    // The lifted layer: a cool duotone built from the image's own luminance.
+    float lum = dot(base, vec3(0.2126, 0.7152, 0.0722));
+    vec3 duotone = mix(vec3(0.04, 0.13, 0.38), vec3(0.66, 0.85, 1.0), lum);
+
+    return vec4(mix(base, duotone, mask * progress), 1.0);
+  }
 
   // Scroll-speed bend. A semicircular profile means the middle of the image
   // barely moves while the top and bottom bow horizontally — so the picture
@@ -83,6 +128,7 @@ const FRAG = /* glsl */ `
     col.b = texture2D(uTex, clamp(s - uVel * ca, 0.002, 0.998)).b;
 
     gl_FragColor = vec4(applyDevelop(col), 1.0);
+    gl_FragColor = applyDotReveal(uv, uv, gl_FragColor.rgb);
   }
 `;
 
@@ -111,6 +157,9 @@ export default function DistortImage({
   const canvas = useRef<HTMLCanvasElement>(null);
   const ctxRef = useRef<Ctx | null>(null);
   const raf = useRef(0);
+  // Device pixel ratio, shared so the dot-matrix cell size can be expressed in
+  // the same units as the drawing buffer.
+  const dprRef = useRef(1);
   const state = useRef({
     mx: 0.5,
     my: 0.5,
@@ -191,7 +240,9 @@ export default function DistortImage({
         uHover: gl.getUniformLocation(program, "uHover"),
         uTime: gl.getUniformLocation(program, "uTime"),
         uCurl: gl.getUniformLocation(program, "uCurl"),
-        uDevelop: gl.getUniformLocation(program, "uDevelop")
+        uDevelop: gl.getUniformLocation(program, "uDevelop"),
+        uReveal: gl.getUniformLocation(program, "uReveal"),
+        uCellPx: gl.getUniformLocation(program, "uCellPx")
       };
       gl.uniform1i(uniforms.uTex, 0);
 
@@ -225,6 +276,7 @@ export default function DistortImage({
       const cv = canvas.current;
       if (!cv) return;
       const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
+      dprRef.current = dpr;
       const w = Math.max(1, Math.floor(el.clientWidth * dpr));
       const h = Math.max(1, Math.floor(el.clientHeight * dpr));
       if (cv.width !== w || cv.height !== h) {
@@ -288,6 +340,10 @@ export default function DistortImage({
       gl.uniform1f(c.uniforms.uTime, now / 1000);
       gl.uniform1f(c.uniforms.uCurl, s.curl * 0.06);
       gl.uniform1f(c.uniforms.uDevelop, s.develop);
+      gl.uniform1f(c.uniforms.uReveal, s.hover);
+      // Cell size in the same device pixels as uRes, or the squares would scale
+      // with the display's pixel ratio.
+      gl.uniform1f(c.uniforms.uCellPx, 13 * dprRef.current);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
       // Stop once hover, bend and develop have all settled — otherwise keep
