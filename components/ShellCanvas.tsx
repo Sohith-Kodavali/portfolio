@@ -9,11 +9,8 @@ import {
   cos,
   exp,
   float,
-  length,
-  pointUV,
   positionLocal,
   sin,
-  smoothstep,
   uniform,
   vec2,
   vec4,
@@ -124,6 +121,34 @@ function ParticleField({
     []
   );
 
+  // Soft round grains.
+  //
+  // This is a texture rather than maths on `pointUV`, deliberately. three's
+  // pointUV node emits GLSL's `gl_PointCoord` — and it emits it into the WGSL
+  // output too, where that identifier does not exist, so the shader fails to
+  // compile on the WebGPU backend with:
+  //     WGSL error: unresolved value 'gl_PointCoord'
+  // The WebGL2 fallback hides it completely, which is how it survived review.
+  // A radial sprite sampled through `map` goes through three's own cross-backend
+  // plumbing instead, so it compiles on both.
+  const sprite = useMemo(() => {
+    if (typeof document === "undefined") return null;
+    const size = 64;
+    const c = document.createElement("canvas");
+    c.width = c.height = size;
+    const g = c.getContext("2d");
+    if (!g) return null;
+    const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
+    grad.addColorStop(0, "rgba(255,255,255,1)");
+    grad.addColorStop(0.4, "rgba(255,255,255,0.62)");
+    grad.addColorStop(1, "rgba(255,255,255,0)");
+    g.fillStyle = grad;
+    g.fillRect(0, 0, size, size);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.NoColorSpace;
+    return t;
+  }, []);
+
   const material = useMemo(() => {
     const { uTime, uSize, uDpr, uMouse, uColor } = uniforms;
     const aRandom = attribute("aRandom", "vec3");
@@ -149,26 +174,18 @@ function ParticleField({
     const push = exp(d.length().mul(-5)).mul(0.14);
     const off = d.mul(push).div(d.length().add(1e-4));
 
-    // pointUV is the point-sprite coordinate (gl_PointCoord). @types/three
-    // declares it as a bare `Node`, so the vector operators are missing from the
-    // type even though the runtime value is a vec2 node — hence the narrow cast
-    // through the typed vec2 surface.
-    const centred = (pointUV as unknown as ReturnType<typeof vec2>).sub(0.5);
-    const sprite = length(centred);
-    const falloff = smoothstep(float(0.5), float(0.05), sprite);
-    const alpha = falloff.mul(aRandom.x.mul(0.38).add(0.08));
-
     const m = new THREE.PointsNodeMaterial();
     m.positionNode = vec3(x.add(off.x), y.add(off.y), positionLocal.z);
     m.sizeNode = uSize.mul(uDpr).mul(aRandom.z.mul(0.9).add(0.35));
     m.colorNode = vec4(uColor, 1);
-    m.opacityNode = alpha;
+    m.opacityNode = aRandom.x.mul(0.38).add(0.08);
+    if (sprite) m.map = sprite;
     m.transparent = true;
     m.depthTest = false;
     m.depthWrite = false;
     m.blending = THREE.AdditiveBlending;
     return m;
-  }, [uniforms]);
+  }, [uniforms, sprite]);
 
   useEffect(() => {
     uniforms.uColor.value.set(dark ? "#8fb4ff" : "#5b7fb8");
