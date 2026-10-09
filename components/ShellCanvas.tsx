@@ -50,6 +50,51 @@ function Lighting({ dark }: { dark: boolean }) {
   );
 }
 
+/**
+ * Moves the camera, rather than transforming the page.
+ *
+ * This is how the reference achieves what reads as the whole page bending: the
+ * camera dollies back as you scroll while the content stays anchored, so the
+ * scene recedes and the frame opens up. It is not a CSS or shader transform —
+ * which also means it carries none of the pinned-section risk that a page-wide
+ * transform would.
+ *
+ * Values are adapted to our scene scale, not copied: the reference's Z 24 → 32
+ * and FOV 60 are for a model at scale 22, and our wordmark sits around z = 1 at a
+ * camera distance of 5. The *shape* is what transfers — a dolly over roughly the
+ * first viewport and a quarter, with the pointer adding a small rotational
+ * parallax — so the ratios are tuned here rather than lifted.
+ */
+function CameraRig({ scroll }: { scroll: React.RefObject<number> }) {
+  const { camera, pointer } = useThree();
+  const restZ = useRef(5);
+  const aim = useRef(new THREE.Vector3(0, 0, 0));
+
+  useFrame((_, delta) => {
+    const k = Math.min(1, delta * 3);
+    const y = scroll.current ?? 0;
+    const vh = Math.max(window.innerHeight, 1);
+
+    // 0 at the top, 1 once the hero has scrolled away.
+    const t = Math.min(Math.max(y / (vh * 1.25), 0), 1);
+    const eased = t * t * (3 - 2 * t);
+
+    // Dolly back. Small numbers, because our scene is compact — a large move
+    // would push the wordmark out of frame entirely rather than just opening it.
+    const targetZ = restZ.current + eased * 2.4;
+    camera.position.z += (targetZ - camera.position.z) * k;
+
+    // Pointer parallax. The reference uses strength 1.4 / lag 0.18 / rotation
+    // 0.12; ours works out smaller because our camera is far closer to the
+    // subject, so the same rotation would swing much further on screen.
+    aim.current.x += (pointer.x * 0.16 - aim.current.x) * k;
+    aim.current.y += (pointer.y * 0.1 - aim.current.y) * k;
+    camera.lookAt(aim.current.x, aim.current.y, 0);
+  });
+
+  return null;
+}
+
 /** Keeps the wordmark anchored to the hero as the document scrolls. */
 function WordDriver({
   dark,
@@ -402,6 +447,7 @@ export default function ShellCanvas() {
         gl={createRenderer}
       >
         <ScrollBridge scroll={scroll} />
+        <CameraRig scroll={scroll} />
         <Lighting dark={dark} />
         <Suspense fallback={null}>
           <WordDriver dark={dark} glass={glass} scroll={scroll} />
