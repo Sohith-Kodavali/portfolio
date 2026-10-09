@@ -22,6 +22,25 @@ const FRAG = /* glsl */ `
   uniform vec2  uVel;
   uniform float uHover;
   uniform float uTime;
+  uniform float uCurl;
+  uniform float uDevelop;
+
+  // Scroll-speed bend. A semicircular profile means the middle of the image
+  // barely moves while the top and bottom bow horizontally — so the picture
+  // flexes like a sheet rather than accumulating distortion with distance
+  // travelled. (Technique from the haoqi.design build write-up.)
+  vec2 applyCurl(vec2 uv) {
+    float centered = 2.0 * uv.y - 1.0;
+    float profile = 1.0 - sqrt(max(0.0, 1.0 - centered * centered));
+    float uvScale = 1.0 - profile * uCurl;
+    return vec2((uv.x - 0.5) * uvScale + 0.5, uv.y);
+  }
+
+  // Film-negative to full colour as the image arrives: it "develops" rather
+  // than simply appearing.
+  vec3 applyDevelop(vec3 rgb) {
+    return mix(1.0 - rgb, rgb, clamp(uDevelop, 0.0, 1.0));
+  }
 
   // Replicates object-fit: cover. The visible plane shows only a *sub-range* of
   // the texture, so the range has to be narrowed (multiplied), never widened.
@@ -39,7 +58,7 @@ const FRAG = /* glsl */ `
 
   void main() {
     vec2 uv = vUv;
-    vec2 suv = coverUv(uv);
+    vec2 suv = applyCurl(coverUv(uv));
 
     vec2 d = uv - uMouse;
     float dist = length(d);
@@ -63,7 +82,7 @@ const FRAG = /* glsl */ `
     col.r = texture2D(uTex, clamp(s + uVel * ca, 0.002, 0.998)).r;
     col.b = texture2D(uTex, clamp(s - uVel * ca, 0.002, 0.998)).b;
 
-    gl_FragColor = vec4(col, 1.0);
+    gl_FragColor = vec4(applyDevelop(col), 1.0);
   }
 `;
 
@@ -101,6 +120,12 @@ export default function DistortImage({
     vy: 0,
     hover: 0,
     target: 0,
+    // Scroll-speed bend: last scroll position and the smoothed strength.
+    lastScrollY: null as number | null,
+    curl: 0,
+    // Film-develop progress as the card arrives.
+    develop: 0,
+    developTarget: 0,
     running: false
   });
   const [supported, setSupported] = useState(false);
@@ -164,7 +189,9 @@ export default function DistortImage({
         uMouse: gl.getUniformLocation(program, "uMouse"),
         uVel: gl.getUniformLocation(program, "uVel"),
         uHover: gl.getUniformLocation(program, "uHover"),
-        uTime: gl.getUniformLocation(program, "uTime")
+        uTime: gl.getUniformLocation(program, "uTime"),
+        uCurl: gl.getUniformLocation(program, "uCurl"),
+        uDevelop: gl.getUniformLocation(program, "uDevelop")
       };
       gl.uniform1i(uniforms.uTex, 0);
 
@@ -209,6 +236,8 @@ export default function DistortImage({
     };
 
     const s = state.current;
+    let lastFrameTime = performance.now();
+
     const loop = () => {
       const cv = canvas.current;
       const c = ctxRef.current;
@@ -222,6 +251,12 @@ export default function DistortImage({
         return;
       }
 
+      const now = performance.now();
+      // Clamped: a backgrounded tab waking up would otherwise report one huge
+      // frame and spike the curl to maximum.
+      const dt = Math.min(Math.max((now - lastFrameTime) / 1000, 1 / 240), 0.1);
+      lastFrameTime = now;
+
       const k = 0.16;
       const px = s.mx;
       const py = s.my;
@@ -231,16 +266,39 @@ export default function DistortImage({
       s.vy = s.vy * 0.9 + (py - s.ty) * 0.6;
       s.hover += (s.target - s.hover) * 0.08;
 
+      // Scroll speed -> bend. Fast attack, slow release: a trackpad reports
+      // dozens of tiny velocity spikes per gesture, and without the asymmetric
+      // smoothing those read as visual noise rather than as speed.
+      const scrollY = window.scrollY;
+      const velocity =
+        s.lastScrollY === null ? 0 : Math.abs(scrollY - s.lastScrollY) / dt;
+      s.lastScrollY = scrollY;
+      const curlTarget = Math.min(Math.max(velocity / 1400, 0), 1);
+      const tau = curlTarget > s.curl ? 0.025 : 0.175;
+      s.curl += (curlTarget - s.curl) * (1 - Math.exp(-dt / tau));
+
+      // Develop on arrival, reset once fully out of frame.
+      s.develop += (s.developTarget - s.develop) * Math.min(1, dt / 0.8);
+
       gl.useProgram(c.program);
       gl.uniform2f(c.uniforms.uRes, cv.width, cv.height);
       gl.uniform2f(c.uniforms.uMouse, s.tx, 1 - s.ty);
       gl.uniform2f(c.uniforms.uVel, s.vx, -s.vy);
       gl.uniform1f(c.uniforms.uHover, s.hover);
-      gl.uniform1f(c.uniforms.uTime, performance.now() / 1000);
+      gl.uniform1f(c.uniforms.uTime, now / 1000);
+      gl.uniform1f(c.uniforms.uCurl, s.curl * 0.06);
+      gl.uniform1f(c.uniforms.uDevelop, s.develop);
       gl.drawArrays(gl.TRIANGLES, 0, 3);
 
-      // stop once the effect has fully settled and the pointer is gone
-      if (s.hover < 0.002 && s.target === 0) {
+      // Stop once hover, bend and develop have all settled — otherwise keep
+      // running, so a scroll can bend the image without the pointer being over
+      // it.
+      const settled =
+        s.hover < 0.002 &&
+        s.curl < 0.001 &&
+        Math.abs(s.develop - s.developTarget) < 0.002 &&
+        s.target === 0;
+      if (settled) {
         s.running = false;
         if (canvas.current) canvas.current.style.opacity = "0";
         return;
@@ -272,16 +330,34 @@ export default function DistortImage({
       start();
     };
 
+    // Scroll has to be able to drive the bend without the pointer being over the
+    // card, so it also wakes the loop.
+    const onScroll = () => start();
+
+    // Develop on arrival; reset once the card is fully out of frame so it plays
+    // again on the next visit rather than staying developed forever.
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        s.developTarget = entry.isIntersecting ? 1 : 0;
+        start();
+      },
+      { threshold: 0.15 }
+    );
+    io.observe(el);
+
     el.addEventListener("pointerenter", onEnter);
     el.addEventListener("pointerleave", onLeave);
     el.addEventListener("pointermove", onMove);
     window.addEventListener("resize", resize);
+    window.addEventListener("scroll", onScroll, { passive: true });
 
     return () => {
+      io.disconnect();
       el.removeEventListener("pointerenter", onEnter);
       el.removeEventListener("pointerleave", onLeave);
       el.removeEventListener("pointermove", onMove);
       window.removeEventListener("resize", resize);
+      window.removeEventListener("scroll", onScroll);
       cancelAnimationFrame(raf.current);
     };
   }, [src, supported]);
