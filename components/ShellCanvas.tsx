@@ -19,11 +19,15 @@ import {
 import { useQuality } from "@/lib/quality";
 import { useTheme } from "@/lib/useTheme";
 import { getScrollY } from "@/lib/scroll";
+import { readSectionLayout, scrollSyncedWorldY, type SectionLayout } from "@/lib/sectionAnchor";
 import { stage } from "@/lib/zoom";
 import WordText from "./WordText";
 import Effects from "./Effects";
 
 const WORD_Y = 0.45;
+/** The DOM section the wordmark is anchored to, and its scroll-lag factor. */
+const HERO_SECTION = "#top";
+const BANNER_SCROLL_SYNC = 0.72;
 const BLUE = new THREE.Color("#2f7ef0");
 const EMBER = new THREE.Color("#050505");
 
@@ -95,7 +99,19 @@ function CameraRig({ scroll }: { scroll: React.RefObject<number> }) {
   return null;
 }
 
-/** Keeps the wordmark anchored to the hero as the document scrolls. */
+/**
+ * Anchors the wordmark to the hero section in world units.
+ *
+ * It reads the hero's position in the document once (and again on resize, and
+ * once the layout has settled after fonts load), then every frame converts that
+ * anchor into a world-space Y. The content therefore sits where its DOM section
+ * sits and travels with scroll at a rate expressed in viewport world heights —
+ * not the old `scrollY / innerHeight * viewport.height` nudge, which re-derived
+ * the mapping from raw pixels every frame and ignored where the section was.
+ *
+ * The 0.72 sync factor makes the wordmark trail the DOM slightly, which is what
+ * gives the recede depth as the CameraRig dollies back.
+ */
 function WordDriver({
   dark,
   glass,
@@ -106,14 +122,46 @@ function WordDriver({
   scroll: React.RefObject<number>;
 }) {
   const group = useRef<THREE.Group>(null);
+  const layout = useRef<SectionLayout | null>(null);
   const { viewport } = useThree();
+
+  useEffect(() => {
+    const measure = () => {
+      const el = document.querySelector<HTMLElement>(HERO_SECTION);
+      layout.current = el ? readSectionLayout(el) : null;
+    };
+    measure();
+    // The hero's height changes as web fonts swap in, so re-measure a beat after
+    // load rather than trusting the first paint.
+    const settle = window.setTimeout(measure, 400);
+    window.addEventListener("resize", measure, { passive: true });
+    return () => {
+      window.clearTimeout(settle);
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
 
   useFrame(() => {
     const g = group.current;
     if (!g) return;
     const sc = scroll.current ?? 0;
-    g.position.y = WORD_Y + (sc / Math.max(window.innerHeight, 1)) * viewport.height;
-    g.visible = sc < window.innerHeight * 1.1;
+    const vh = Math.max(window.innerHeight, 1);
+
+    const section = layout.current;
+    g.position.y = section
+      ? WORD_Y +
+        scrollSyncedWorldY({
+          layout: section,
+          scrollTop: sc,
+          viewportHeight: vh,
+          viewportWorldHeight: viewport.height,
+          scrollSyncFactor: BANNER_SCROLL_SYNC
+        })
+      : // Before the anchor has been measured, fall back to pixel tracking so
+        // the wordmark never jumps on the first frames.
+        WORD_Y + (sc / vh) * viewport.height;
+
+    g.visible = sc < vh * 1.1;
   });
 
   return (
