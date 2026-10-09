@@ -18,6 +18,7 @@ import {
 } from "three/tsl";
 import { useQuality } from "@/lib/quality";
 import { useTheme } from "@/lib/useTheme";
+import { getScrollY } from "@/lib/scroll";
 import { stage } from "@/lib/zoom";
 import WordText from "./WordText";
 import Effects from "./Effects";
@@ -339,7 +340,11 @@ function PointerObject() {
 /** Writes the live scroll position into a ref each frame (no React re-render). */
 function ScrollBridge({ scroll }: { scroll: React.RefObject<number> }) {
   useFrame(() => {
-    scroll.current = window.scrollY;
+    // getScrollY(), not window.scrollY — see lib/scroll.ts. Reading the raw
+    // window value means the shell renders against a scroll position one frame
+    // stale, which is what makes canvas content drift from the DOM on fast
+    // scrolls.
+    scroll.current = getScrollY();
   });
   return null;
 }

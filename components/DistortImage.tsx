@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
+import { getScrollY } from "@/lib/scroll";
 
 const VERT = /* glsl */ `
   attribute vec2 aPos;
@@ -321,11 +322,14 @@ export default function DistortImage({
       // Scroll speed -> bend. Fast attack, slow release: a trackpad reports
       // dozens of tiny velocity spikes per gesture, and without the asymmetric
       // smoothing those read as visual noise rather than as speed.
-      const scrollY = window.scrollY;
+      // getScrollY(), not window.scrollY — Lenis sets scrollTop itself each frame,
+      // so its value matches what was just committed. The raw window offset is a
+      // frame stale and would make the curl respond a beat late.
+      const scrollY = getScrollY();
       const velocity =
         s.lastScrollY === null ? 0 : Math.abs(scrollY - s.lastScrollY) / dt;
       s.lastScrollY = scrollY;
-      const curlTarget = Math.min(Math.max(velocity / 1400, 0), 1);
+      const curlTarget = Math.min(Math.max(velocity / 800, 0), 1);
       const tau = curlTarget > s.curl ? 0.025 : 0.175;
       s.curl += (curlTarget - s.curl) * (1 - Math.exp(-dt / tau));
 
@@ -338,10 +342,11 @@ export default function DistortImage({
       gl.uniform2f(c.uniforms.uVel, s.vx, -s.vy);
       gl.uniform1f(c.uniforms.uHover, s.hover);
       gl.uniform1f(c.uniforms.uTime, now / 1000);
-      // 0.06 was far too subtle to read as a bend — 6% compression at the extreme
-      // top and bottom, over an image that is mostly middle. This is a visible
-      // amount while still reading as a flex rather than a warp.
-      gl.uniform1f(c.uniforms.uCurl, s.curl * 0.22);
+      // 0.22 was an over-correction. The reverse-engineered production constants
+      // for this effect are: |scrollVelocity| / 800, attack 0.025s, release
+      // 0.175s, maximum curl 0.06. It is meant to be subtle — a flex you feel
+      // more than see — and I mistook subtle for broken and cranked it up.
+      gl.uniform1f(c.uniforms.uCurl, s.curl * 0.06);
       gl.uniform1f(c.uniforms.uDevelop, s.develop);
       gl.uniform1f(c.uniforms.uReveal, s.hover);
       // Cell size in the same device pixels as uRes, or the squares would scale
