@@ -12,7 +12,6 @@ import { usePointerBus, getPointer } from "@/lib/pointer";
 import { stage } from "@/lib/zoom";
 import WordText from "./WordText";
 import WorkLayers from "./WorkLayers";
-import StickerField from "./StickerField";
 import Effects from "./Effects";
 
 const WORD_Y = 0.45;
@@ -385,7 +384,6 @@ export default function ShellCanvas() {
         <CameraRig scroll={scroll} />
         <Lighting dark={dark} />
         <Suspense fallback={null}>
-          <StickerField dark={dark} />
           <WordDriver dark={dark} glass={glass} scroll={scroll} />
           <WorkLayers />
         </Suspense>
