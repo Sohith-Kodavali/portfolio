@@ -138,14 +138,23 @@ function ParticleField({
     c.width = c.height = size;
     const g = c.getContext("2d");
     if (!g) return null;
+    // RGB must fall off to *black*, not to transparent. The field blends
+    // additively, so a sprite that stays white with a fading alpha still adds a
+    // full white square per grain — which is exactly what it looked like. With
+    // the brightness falling to black the edges contribute nothing and the
+    // grains read as soft round dots.
     const grad = g.createRadialGradient(size / 2, size / 2, 0, size / 2, size / 2, size / 2);
     grad.addColorStop(0, "rgba(255,255,255,1)");
-    grad.addColorStop(0.4, "rgba(255,255,255,0.62)");
-    grad.addColorStop(1, "rgba(255,255,255,0)");
+    grad.addColorStop(0.35, "rgba(150,150,150,1)");
+    grad.addColorStop(1, "rgba(0,0,0,1)");
     g.fillStyle = grad;
     g.fillRect(0, 0, size, size);
     const t = new THREE.CanvasTexture(c);
     t.colorSpace = THREE.NoColorSpace;
+    // No mipmaps: point sprites sample a single texel region and mip selection
+    // at these sizes just softens them into mush.
+    t.generateMipmaps = false;
+    t.minFilter = THREE.LinearFilter;
     return t;
   }, []);
 
