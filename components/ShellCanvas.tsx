@@ -398,7 +398,6 @@ export default function ShellCanvas() {
       >
         <ScrollBridge scroll={scroll} />
         <Lighting dark={dark} />
-        <ParticleField count={quality.particles} dark={dark} active={active} />
         <Suspense fallback={null}>
           <WordDriver dark={dark} glass={glass} scroll={scroll} />
         </Suspense>

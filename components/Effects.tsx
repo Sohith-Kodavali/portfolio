@@ -6,7 +6,6 @@ import * as THREE from "three/webgpu";
 import { pass, vec4 } from "three/tsl";
 import { float } from "three/tsl";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
-import { afterImage } from "three/addons/tsl/display/AfterImageNode.js";
 import { film } from "three/addons/tsl/display/FilmNode.js";
 
 export type EffectTier = "full" | "light" | "off";
@@ -50,16 +49,17 @@ export default function Effects({ tier }: { tier: EffectTier }) {
       // filter. The threshold sits high so only real highlights glow.
       const glow = bloom(beauty, tier === "full" ? 0.55 : 0.3, 0.62, 0.82);
 
-      // Feedback trails, so the particle field carries inertia between frames
-      // instead of teleporting. Runs on the raw beauty pass rather than through
-      // an intermediate texture.
-      const trailed = afterImage(beauty, float(tier === "full" ? 0.82 : 0.92));
-
+      // NO afterimage here, deliberately. Feedback trails were tried and looked
+      // wrong the moment anything moved fast: during the transition's scale-up
+      // the pointer left dozens of stacked ghost copies of itself on screen — the
+      // damp never catches up with that much movement per frame. Trails suit a
+      // slow drifting field; they wreck a fast one.
+      //
       // Film stock last, so the grain sits *on* the image rather than being
       // smeared by anything after it. `film` hands back the FilmNode instance
       // rather than a typed vec4 node, so the swizzle helpers are missing from
       // the type even though it is one at runtime.
-      const stock = film(trailed, float(tier === "full" ? 0.13 : 0.07)) as unknown as
+      const stock = film(beauty, float(tier === "full" ? 0.13 : 0.07)) as unknown as
         ReturnType<typeof vec4>;
 
       const p = new THREE.RenderPipeline(gl as never);
