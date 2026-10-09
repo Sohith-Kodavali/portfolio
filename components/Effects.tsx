@@ -4,7 +4,10 @@ import { useFrame, useThree } from "@react-three/fiber";
 import { useEffect, useRef } from "react";
 import * as THREE from "three/webgpu";
 import { pass, vec4 } from "three/tsl";
+import { float } from "three/tsl";
 import { bloom } from "three/addons/tsl/display/BloomNode.js";
+import { afterImage } from "three/addons/tsl/display/AfterImageNode.js";
+import { film } from "three/addons/tsl/display/FilmNode.js";
 
 export type EffectTier = "full" | "light" | "off";
 
@@ -47,13 +50,22 @@ export default function Effects({ tier }: { tier: EffectTier }) {
       // filter. The threshold sits high so only real highlights glow.
       const glow = bloom(beauty, tier === "full" ? 0.55 : 0.3, 0.62, 0.82);
 
+      // Feedback trails, so the particle field carries inertia between frames
+      // instead of teleporting. Runs on the raw beauty pass rather than through
+      // an intermediate texture.
+      const trailed = afterImage(beauty, float(tier === "full" ? 0.82 : 0.92));
+
+      // Film stock last, so the grain sits *on* the image rather than being
+      // smeared by anything after it. `film` hands back the FilmNode instance
+      // rather than a typed vec4 node, so the swizzle helpers are missing from
+      // the type even though it is one at runtime.
+      const stock = film(trailed, float(tier === "full" ? 0.13 : 0.07)) as unknown as
+        ReturnType<typeof vec4>;
+
       const p = new THREE.RenderPipeline(gl as never);
-      // Take RGB from the bloom sum but alpha from the scene pass alone.
-      // `beauty.add(glow)` adds alpha too, and the bloom's alpha is 1 across the
-      // whole frame — so the empty regions came back opaque and buried the page's
-      // light gradient in black. Keeping the scene's alpha is what lets the
-      // transparent canvas stay transparent where there is no geometry.
-      p.outputNode = vec4(beauty.rgb.add(glow.rgb), beauty.a);
+      // RGB from the chain; alpha carried through. The bloom sum goes into RGB
+      // only, never into alpha, or the transparent canvas turns opaque black.
+      p.outputNode = vec4(stock.rgb.add(glow.rgb), stock.a);
       pipeline.current = p;
     } catch (err) {
       console.warn("[effects] post-processing unavailable; rendering directly.", err);
