@@ -214,13 +214,13 @@ canvas {
 
 .grid-cols {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
+  grid-template-columns: repeat(3, 1fr);
   height: 100%;
 }
 
 .grid-cols > span {
   border-left: 1px solid var(--line);
-  opacity: 0.6;
+  opacity: 0.45;
 }
 
 .grid-cols > span:last-child {

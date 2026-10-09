@@ -1,23 +1,18 @@
 export default function GridOverlay() {
-  const marks = [0, 0.25, 0.5, 0.75, 1];
-
+  // Three rules, not twelve.
+  //
+  // This used to be a full 12-column grid with a crosshair at every
+  // intersection: 12 lines plus 65 registration marks. At that density it stops
+  // reading as structure and starts reading as texture — which is the opposite
+  // of the clean, sparsely-ruled feel it was meant to echo.
   return (
     <div className="grid-lines" aria-hidden>
       <div className="grid-frame">
         <div className="grid-cols">
-          {Array.from({ length: 12 }).map((_, i) => (
-            <span key={i} />
-          ))}
+          <span />
+          <span />
+          <span />
         </div>
-        {marks.map((y) =>
-          Array.from({ length: 13 }).map((_, i) => (
-            <i
-              key={`${y}-${i}`}
-              className="grid-plus"
-              style={{ left: `${(i / 12) * 100}%`, top: `${y * 100}%` }}
-            />
-          ))
-        )}
       </div>
     </div>
   );

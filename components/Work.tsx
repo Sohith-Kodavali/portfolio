@@ -56,7 +56,7 @@ export default function Work() {
             <>
               <div
                 data-media
-                className="ph relative aspect-[16/9] w-full overflow-hidden"
+                className="ph relative aspect-[4/3] w-full overflow-hidden lg:w-[64%]"
                 data-label={`${p.name} — image placeholder`}
               >
                 <div className="absolute inset-0 transition-transform duration-[1.4s] ease-[cubic-bezier(.66,0,.01,1)] group-hover:scale-[1.06]">
