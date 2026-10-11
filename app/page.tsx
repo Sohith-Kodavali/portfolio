@@ -1,5 +1,4 @@
 import ShellCanvas from "@/components/ShellCanvasLazy";
-import HeroBackdrop from "@/components/HeroBackdrop";
 import ColorGrade from "@/components/ColorGrade";
 import ScrollSmear from "@/components/ScrollSmear";
 import Nav from "@/components/Nav";
@@ -17,7 +16,6 @@ import Footer from "@/components/Footer";
 export default function Home() {
   return (
     <>
-      <HeroBackdrop />
       <ColorGrade />
       <ScrollSmear />
       <ShellCanvas />

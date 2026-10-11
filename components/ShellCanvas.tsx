@@ -11,6 +11,7 @@ import { readSectionLayout, scrollSyncedWorldY, type SectionLayout } from "@/lib
 import { usePointerBus, getPointer } from "@/lib/pointer";
 import { stage } from "@/lib/zoom";
 import WordText from "./WordText";
+import FluidBackground from "./FluidBackground";
 import WorkLayers from "./WorkLayers";
 import Effects from "./Effects";
 
@@ -381,6 +382,7 @@ export default function ShellCanvas() {
         gl={createRenderer}
       >
         <ScrollBridge scroll={scroll} />
+        <FluidBackground />
         <CameraRig scroll={scroll} />
         <Lighting dark={dark} />
         <Suspense fallback={null}>
