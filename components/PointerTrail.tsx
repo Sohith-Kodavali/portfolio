@@ -9,31 +9,24 @@ import { onTick } from "@/lib/ticker";
 const CELL = 16;
 const HISTORY = 14;
 const LIME = "192, 254, 4";
-// How long a cell stays visible, in ms. Without this the trail only ever dropped
-// cells when a new one pushed the oldest out — so stopping the pointer left the
-// trail frozen on screen indefinitely.
-const LIFETIME = 420;
+// How long a cell stays visible, in ms.
+const LIFETIME = 520;
 
 /**
- * The pointer trail.
+ * The pointer trail: 16px cells the cursor drags behind it, shrinking and fading
+ * with age. Canvas 2D rather than WebGL — a dozen filled rectangles a frame does
+ * not justify a GL context, and "exact screen-cell anchoring" is trivial in 2D.
  *
- * The cursor drags a short history of squares behind it: 16px cells, 14 of them,
- * shrinking and fading with age. This is the effect that reads as boxes lighting
- * up and leaving traces as the pointer moves.
+ * Two details from the spec matter more than they look:
  *
- * Canvas 2D rather than WebGL. It is a dozen filled rectangles a frame, so a
- * second GL context would cost far more than it buys — and "exact screen-cell
- * anchoring" is trivial in 2D.
- *
- * Two details from the spec that matter more than they look:
- *
- *   - **Cells, not frames.** The trail records a new entry only when the pointer
- *     crosses into a different 16px cell. Tracking movement in cells rather than
- *     in time means the trail is the same length whether the pointer is dragged
- *     slowly or whipped across the screen.
- *   - **Screen anchoring.** Cells are computed from client coordinates, so the
- *     grid is fixed to the viewport and does not scroll with the page. The trail
- *     belongs to the cursor, not to the document.
+ *   - **Cells, not frames.** The trail records cells, not samples, so it is the
+ *     same length whether the pointer is dragged slowly or whipped across the
+ *     screen. But moving *between* records is what made it look broken: recording
+ *     only when the cell index changed left gaps on a fast flick, because the
+ *     pointer crossed several cells between frames. The path is now walked
+ *     cell-by-cell, so a fast move lays a continuous trail.
+ *   - **Screen anchoring.** Cells come from client coordinates, so the grid is
+ *     fixed to the viewport and does not scroll with the page.
  */
 export default function PointerTrail() {
   const canvas = useRef<HTMLCanvasElement>(null);
@@ -55,46 +48,80 @@ export default function PointerTrail() {
     };
     resize();
 
-    const trail: { x: number; y: number; t: number }[] = [];
-    let px = -1;
-    let py = -1;
+    const cells: { x: number; y: number; t: number }[] = [];
+    let px = 0;
+    let py = 0;
+    let has = false;
     let inside = false;
     let dirty = false;
+    let lastCellX = Number.MIN_SAFE_INTEGER;
+    let lastCellY = Number.MIN_SAFE_INTEGER;
 
-    const onMove = (e: PointerEvent) => {
-      px = e.clientX;
-      py = e.clientY;
+    const onMove = (event: PointerEvent) => {
+      px = event.clientX;
+      py = event.clientY;
+      if (!has) {
+        has = true;
+        // Reset the last cell so re-entry starts a fresh trail instead of drawing
+        // a line across the screen from wherever the pointer left.
+        lastCellX = Number.MIN_SAFE_INTEGER;
+        lastCellY = Number.MIN_SAFE_INTEGER;
+      }
       inside = true;
     };
-    const onLeave = () => {
+    const onOut = (event: PointerEvent) => {
+      // relatedTarget is null only when the pointer actually leaves the window.
+      if (event.relatedTarget) return;
       inside = false;
+      has = false;
+      dirty = true;
+    };
+    const onBlur = () => {
+      inside = false;
+      has = false;
       dirty = true;
     };
 
     window.addEventListener("pointermove", onMove, { passive: true });
+    window.addEventListener("pointerout", onOut, { passive: true });
+    window.addEventListener("blur", onBlur);
     window.addEventListener("resize", resize);
-    document.addEventListener("pointerleave", onLeave);
 
     const clear = () => ctx.clearRect(0, 0, window.innerWidth, window.innerHeight);
 
     const stop = onTick(() => {
       const now = performance.now();
 
-      if (inside && px >= 0) {
+      if (inside && has) {
         const cx = Math.floor(px / CELL);
         const cy = Math.floor(py / CELL);
-        const last = trail[trail.length - 1];
-        if (!last || last.x !== cx || last.y !== cy) {
-          trail.push({ x: cx, y: cy, t: now });
+        if (lastCellX === Number.MIN_SAFE_INTEGER) {
+          cells.push({ x: cx, y: cy, t: now });
+        } else if (cx !== lastCellX || cy !== lastCellY) {
+          // Walk the path between the last cell and this one so a fast move
+          // leaves a continuous trail rather than a dotted line.
+          const dx = cx - lastCellX;
+          const dy = cy - lastCellY;
+          const steps = Math.max(Math.abs(dx), Math.abs(dy));
+          for (let i = 1; i <= steps; i++) {
+            const ix = Math.round(lastCellX + (dx * i) / steps);
+            const iy = Math.round(lastCellY + (dy * i) / steps);
+            const prev = cells[cells.length - 1];
+            if (!prev || prev.x !== ix || prev.y !== iy) {
+              cells.push({ x: ix, y: iy, t: now });
+            }
+          }
         }
+        lastCellX = cx;
+        lastCellY = cy;
       }
 
-      // Age out by time first. This is what makes the trail dissolve when the
-      // pointer stops, rather than waiting for the next movement to push it out.
-      while (trail.length && now - trail[0].t > LIFETIME) trail.shift();
-      while (trail.length > HISTORY) trail.shift();
+      // Age out by time first — this is what makes the trail dissolve when the
+      // pointer stops rather than waiting for new movement to push it out.
+      while (cells.length && now - cells[0].t > LIFETIME) cells.shift();
+      while (cells.length > HISTORY) cells.shift();
 
-      if (!trail.length) {
+      if (!cells.length) {
         if (dirty) {
           clear();
           dirty = false;
@@ -104,22 +131,16 @@ export default function PointerTrail() {
       dirty = true;
 
       clear();
-      const newest = trail.length;
-      for (let i = 0; i < trail.length; i++) {
-        const cell = trail[i];
-        // Fades over its own lifetime, brightest when newly laid down.
+      const newest = cells.length;
+      for (let i = 0; i < cells.length; i++) {
+        const cell = cells[i];
         const life = 1 - (now - cell.t) / LIFETIME;
         const recency = (i + 1) / newest;
         const a = Math.max(0, life) * recency;
         const size = CELL * (0.3 + a * 0.7);
         ctx.globalAlpha = a * 0.7;
         ctx.fillStyle = `rgb(${LIME})`;
-        ctx.fillRect(
-          cell.x * CELL + CELL / 2 - size / 2,
-          cell.y * CELL + CELL / 2 - size / 2,
-          size,
-          size
-        );
+        ctx.fillRect(cell.x * CELL + CELL / 2 - size / 2, cell.y * CELL + CELL / 2 - size / 2, size, size);
       }
       ctx.globalAlpha = 1;
     });
@@ -127,8 +148,9 @@ export default function PointerTrail() {
     return () => {
       stop();
       window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerout", onOut);
+      window.removeEventListener("blur", onBlur);
       window.removeEventListener("resize", resize);
-      document.removeEventListener("pointerleave", onLeave);
     };
   }, []);
 
@@ -136,8 +158,8 @@ export default function PointerTrail() {
     <canvas
       ref={canvas}
       aria-hidden
-      // Sits under the custom cursor (z-400/401) so the cursor stays on top of
-      // its own trail, and over the grid.
+      // Under the custom cursor (z-400/401) so the cursor stays on top of its
+      // own trail, and over the grid.
       className="pointer-events-none fixed inset-0 z-[398]"
     />
   );
