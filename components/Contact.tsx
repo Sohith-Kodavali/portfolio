@@ -4,6 +4,7 @@ import { useState } from "react";
 import { profile } from "@/lib/data";
 import Magnetic from "./Magnetic";
 import Reveal from "./Reveal";
+import ScrambleText from "./ScrambleText";
 
 export default function Contact() {
   const [copied, setCopied] = useState(false);
@@ -24,7 +25,7 @@ export default function Contact() {
         <span className="t-eyebrow">Contact / 06</span>
 
         <h2 className="t-display t-huge mt-6 max-w-[16ch]">
-          Let’s build something worth remembering.
+          <ScrambleText text="Let’s build something worth remembering." />
         </h2>
 
         <div className="mt-12 flex flex-wrap items-center justify-center gap-4">

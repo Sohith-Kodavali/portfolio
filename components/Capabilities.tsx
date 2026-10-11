@@ -1,7 +1,7 @@
 "use client";
 
 import { capabilities } from "@/lib/data";
-import MorphHeading from "./MorphHeading";
+import HeadingReveal from "./HeadingReveal";
 import Reveal from "./Reveal";
 import Parallax from "./Parallax";
 
@@ -14,9 +14,9 @@ export default function Capabilities() {
       <div className="mb-[6vh] flex flex-wrap items-end justify-between gap-8">
         <div>
           <span className="t-eyebrow">What I do / 02</span>
-          <MorphHeading className="t-lg mt-5 max-w-[16ch]">
+          <HeadingReveal className="t-lg mt-5 max-w-[16ch]">
             Four disciplines, one hand.
-          </MorphHeading>
+          </HeadingReveal>
         </div>
         <p className="max-w-[36ch] text-sm text-muted">
           Design and engineering in the same loop — so nothing is lost in translation between

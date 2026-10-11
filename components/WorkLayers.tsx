@@ -28,14 +28,19 @@ import { DomRectSampler } from "@/lib/domRects";
 import { projects } from "@/lib/data";
 
 /**
- * Scroll-speed curl, matching the recovered production constants: the image
- * flexes along the horizontal axis in response to speed rather than
- * accumulating distortion with distance, and relaxes back to flat on release.
+ * Scroll-speed curl: the image flexes along the horizontal axis in response to
+ * speed rather than accumulating distortion with distance, and relaxes back to
+ * flat on release.
+ *
+ * The reference's maximum is 0.06 — but that is tuned for full-bleed images.
+ * Ours are 64%-width cards, where 6% at the extreme edges is a couple of pixels
+ * and reads as no bend at all. Raised so the flex is actually perceivable on our
+ * card size; this is the one number to tune if it is too strong or too weak.
  */
 const CURL_VELOCITY = 800;
 const CURL_ATTACK = 0.025;
 const CURL_RELEASE = 0.175;
-const CURL_MAX = 0.06;
+const CURL_MAX = 0.18;
 /** Image "develops" from negative to colour over this long on viewport entry. */
 const DEVELOP_DURATION = 0.8;
 /** Hover dot-matrix reveal duration per card. */
