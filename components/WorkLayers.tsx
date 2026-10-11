@@ -67,7 +67,9 @@ const easeInOutCubic = (v: number) => (v < 0.5 ? 4 * v ** 3 : 1 - (-2 * v + 2) *
 /** Rasterises a work image (SVG or raster) into a texture the shell can sample. */
 async function loadWorkTexture(url: string) {
   const image = new Image();
-  image.crossOrigin = "anonymous";
+  // No crossOrigin: these are same-origin assets, and setting it forces a CORS
+  // request that fails when the server sends no Access-Control-Allow-Origin —
+  // which is what stopped these textures from ever loading.
   image.decoding = "async";
   await new Promise<void>((resolve, reject) => {
     image.onload = () => resolve();
@@ -164,7 +166,7 @@ function makeLayer(map: THREE.Texture, texAspect: number): Layer {
  */
 export default function WorkLayers() {
   const { camera, size, viewport } = useThree();
-  const [images, setImages] = useState<Array<{ tex: THREE.Texture; aspect: number }>>([]);
+  const [images, setImages] = useState<Array<{ tex: THREE.Texture; aspect: number } | null>>([]);
   const [reduced] = useState(
     () => typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches
   );
@@ -176,23 +178,31 @@ export default function WorkLayers() {
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all(projects.map((p) => loadWorkTexture(p.image)))
-      .then((list) => {
-        if (!cancelled) setImages(list);
-      })
-      .catch((err) => console.warn("[work-layers] textures unavailable; keeping DOM images.", err));
+    Promise.all(
+      projects.map((p) =>
+        loadWorkTexture(p.image).catch((err) => {
+          console.warn("[work-layers] image unavailable; keeping its DOM fallback.", err);
+          return null;
+        })
+      )
+    ).then((list) => {
+      if (!cancelled) setImages(list);
+    });
     return () => {
       cancelled = true;
     };
   }, []);
 
-  const layers = useMemo(() => images.map((img) => makeLayer(img.tex, img.aspect)), [images]);
+  const layers = useMemo(
+    () => images.map((img) => (img ? makeLayer(img.tex, img.aspect) : null)),
+    [images]
+  );
   const runtime = useMemo<Runtime[]>(() => layers.map(() => ({ progress: 0, hover: 0 })), [layers]);
 
   // Only once the layers exist do we hide the DOM images, so a texture failure
   // leaves the card visible rather than blank.
   useEffect(() => {
-    if (layers.length === 0) return;
+    if (!layers.some(Boolean)) return;
     const measure = () => sampler.current.reset("[data-media]");
     measure();
     window.addEventListener("resize", measure, { passive: true });
@@ -206,16 +216,17 @@ export default function WorkLayers() {
   useEffect(
     () => () => {
       layers.forEach((layer) => {
+        if (!layer) return;
         layer.material.dispose();
         layer.geometry.dispose();
       });
-      images.forEach((img) => img.tex.dispose());
+      images.forEach((img) => img?.tex.dispose());
     },
     [layers, images]
   );
 
   useFrame((_, frameDelta) => {
-    if (layers.length === 0) return;
+    if (!layers.some(Boolean)) return;
     const dt = Math.min(Math.max(frameDelta, 1 / 240), 0.1);
     const scrollTop = getScrollY();
     const vh = Math.max(1, window.innerHeight);
@@ -276,19 +287,21 @@ export default function WorkLayers() {
 
   return (
     <>
-      {layers.map((layer, i) => (
-        <mesh
-          key={projects[i]?.slug ?? i}
-          ref={(node) => {
-            meshes.current[i] = node;
-          }}
-          geometry={layer.geometry}
-          material={layer.material}
-          frustumCulled={false}
-          renderOrder={20}
-          visible={false}
-        />
-      ))}
+      {layers.map((layer, i) =>
+        layer ? (
+          <mesh
+            key={projects[i]?.slug ?? i}
+            ref={(node) => {
+              meshes.current[i] = node;
+            }}
+            geometry={layer.geometry}
+            material={layer.material}
+            frustumCulled={false}
+            renderOrder={20}
+            visible={false}
+          />
+        ) : null
+      )}
     </>
   );
 }
