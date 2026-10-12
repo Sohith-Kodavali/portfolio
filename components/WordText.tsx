@@ -98,19 +98,20 @@ export default function WordText({
         <mesh geometry={shaped.geometry}>
           <meshPhysicalMaterial
             ref={liquidRef}
-            color="#92b5f6"
-            // Glass, not chrome. Full metal was tried and rejected: on a light
-            // page it reads as flat silver in a light environment, or goes dark
-            // in a contrasting one and fights the black headline.
+            // Saturated and mostly opaque. At transmission 0.85 the material
+            // showed almost nothing but the page behind it, so on a white page
+            // the name was white glass on white — invisible. It has to carry its
+            // own colour to exist at all.
+            color="#4f83ff"
             metalness={0}
-            roughness={0.22}
-            transmission={glass ? 0.85 : 0}
-            ior={1.2}
-            thickness={2}
+            roughness={0.18}
+            transmission={glass ? 0.3 : 0}
+            ior={1.5}
+            thickness={0.6}
             clearcoat={1}
-            clearcoatRoughness={0.12}
-            envMapIntensity={1.5}
-            iridescence={1}
+            clearcoatRoughness={0.08}
+            envMapIntensity={1.2}
+            iridescence={0.8}
             iridescenceIOR={1.4}
             iridescenceThicknessRange={[100, 1400]}
             roughnessMap={sparkle.roughnessMap}

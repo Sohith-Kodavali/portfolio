@@ -291,32 +291,6 @@ export default function ShellCanvas() {
   // machines that can take it.
   const glass = quality.fx;
 
-  // The shell renders only while it has something to show: the hero, the work
-  // section (whose images are drawn here), or the warp transition. Everywhere
-  // else it stops rather than burning a frame every 16ms.
-  const [active, setActive] = useState(true);
-  useEffect(() => {
-    const evaluate = () => {
-      const vh = window.innerHeight;
-      const nearTop = window.scrollY < vh * 1.35;
-      const work = document.querySelector("#work");
-      let inWork = false;
-      if (work) {
-        const rect = work.getBoundingClientRect();
-        inWork = rect.bottom > -vh * 0.5 && rect.top < vh * 1.5;
-      }
-      const next = nearTop || inWork || stage.warping;
-      setActive((prev) => (prev === next ? prev : next));
-    };
-    evaluate();
-    window.addEventListener("scroll", evaluate, { passive: true });
-    const id = window.setInterval(evaluate, 500);
-    return () => {
-      window.removeEventListener("scroll", evaluate);
-      window.clearInterval(id);
-    };
-  }, []);
-
   // Post-processing: bloom, depth of field, lens dispersion and grain.
   // Effects stays fail-safe — if the pipeline cannot be built it falls back to a
   // plain render rather than leaving a black canvas.
@@ -328,16 +302,12 @@ export default function ShellCanvas() {
       : "light";
 
   return (
-    // Hidden outright when the shell is paused: `frameloop="never"` stops
-    // useFrame, so whatever the pointer's last state was would otherwise stay
-    // frozen on screen (e.g. after a jump-scroll straight past the hero).
-    <div
-      className="pointer-events-none fixed inset-0 z-0"
-      style={{ opacity: active ? 1 : 0 }}
-      aria-hidden
-    >
+    // The shell renders continuously. It used to pause via `frameloop="never"`
+    // when it judged nothing was on screen, but that gate was fragile — when the
+    // predicate was wrong the whole canvas (name included) silently vanished.
+    <div className="pointer-events-none fixed inset-0 z-0" aria-hidden>
       <Canvas
-        frameloop={active ? "always" : "never"}
+        frameloop="always"
         dpr={quality.dpr}
         camera={{ position: [0, 0, 5], fov: 45 }}
         gl={createRenderer}
