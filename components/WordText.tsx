@@ -98,25 +98,22 @@ export default function WordText({
         <mesh geometry={shaped.geometry}>
           <meshPhysicalMaterial
             ref={liquidRef}
-            // Tinted so the light theme keeps a sense of thickness against a
-            // near-white page, per the reference's cyan-to-white absorption.
-            color={dark ? "#8fa4c4" : "#cfe6ff"}
-            // Glass, not chrome. Full metal was tried and rejected: on a light
-            // page it reads as flat silver in a light environment, or goes dark
-            // in a contrasting one and fights the black headline.
+            // Tinted and absorbing enough to read against a near-white page — a
+            // physically pure glass on white is almost invisible, which is why
+            // the name kept disappearing.
+            color={dark ? "#8fa4c4" : "#bfe0ff"}
             metalness={0}
             roughness={dark ? 0.1 : 0.06}
-            // Real refraction: the transmission pass samples what is behind the
-            // word — which is exactly why the sticker field exists.
-            transmission={glass ? 1 : 0}
+            // Refraction of whatever is behind the word.
+            transmission={glass ? 0.95 : 0}
             ior={1.18}
             thickness={dark ? 0.9 : 1.1}
             // Beer-Lambert absorption: the colour that survives transmission and
             // how quickly it falls off with thickness.
-            attenuationColor={dark ? "#64c3ff" : "#009dff"}
-            attenuationDistance={dark ? 1.4 : 1.5}
+            attenuationColor={dark ? "#64c3ff" : "#0a86ff"}
+            attenuationDistance={dark ? 1.4 : 1.0}
             // Chromatic dispersion — the colour fringing the reference is built on.
-            dispersion={dark ? 0.1 : 0.12}
+            dispersion={dark ? 0.1 : 0.14}
             clearcoat={1}
             clearcoatRoughness={0.06}
             envMapIntensity={1.8}

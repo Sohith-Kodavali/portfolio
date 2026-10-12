@@ -68,9 +68,9 @@ export default function FluidBackground() {
       uPointer: uniform(new THREE.Vector2(0.5, 0.42)),
       uOpacity: uniform(1),
       uAspect: uniform(1),
-      uBase: uniform(new THREE.Color("#f7faff")),
-      uField: uniform(new THREE.Color("#bcd6ff")),
-      uWarm: uniform(new THREE.Color("#ffe6c9"))
+      uBase: uniform(new THREE.Color("#f2f7ff")),
+      uField: uniform(new THREE.Color("#9cc3ff")),
+      uWarm: uniform(new THREE.Color("#ffdcae"))
     }),
     []
   );
@@ -89,14 +89,15 @@ export default function FluidBackground() {
       const q = fbm(warped.mul(2.1).add(vec2(uniforms.uTime.mul(0.02), uniforms.uTime.mul(-0.015))));
       const q2 = fbm(warped.mul(1.3).sub(vec2(uniforms.uTime.mul(0.012), uniforms.uTime.mul(0.01))));
 
-      const field = smoothstep(0.42, 0.92, q);
-      const warm = smoothstep(0.55, 0.95, q2).mul(0.5);
+      const field = smoothstep(0.32, 0.9, q);
+      const warm = smoothstep(0.55, 0.95, q2).mul(0.55);
       let colour: N = mix(uniforms.uBase, uniforms.uField, field);
       colour = mix(colour, uniforms.uWarm, warm);
 
-      // Soft vignette toward the base colour so the frame edges stay light.
+      // Soft vignette toward the base colour so the frame edges stay light, but
+      // keep more of the field's colour than before — the glass needs it.
       const d = length(local.sub(0.5));
-      colour = mix(colour, uniforms.uBase, smoothstep(0.42, 0.95, d).mul(0.7));
+      colour = mix(colour, uniforms.uBase, smoothstep(0.5, 1.0, d).mul(0.45));
 
       mat.colorNode = vec4(colour, uniforms.uOpacity);
     } catch (err) {

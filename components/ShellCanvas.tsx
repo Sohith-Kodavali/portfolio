@@ -165,10 +165,17 @@ function WordDriver({
     const vh = Math.max(window.innerHeight, 1);
 
     const section = layout.current;
-    g.position.y = section
+    // Anchor to the first viewport below the hero's top, NOT the hero's own
+    // centre. The hero is taller than the viewport on a short screen, so using
+    // its centre pushed the name off the bottom — it only looked right when the
+    // hero happened to be exactly one screen tall.
+    const anchor: SectionLayout | null = section
+      ? { topDocY: section.topDocY, height: vh }
+      : null;
+    g.position.y = anchor
       ? WORD_Y +
         scrollSyncedWorldY({
-          layout: section,
+          layout: anchor,
           scrollTop: sc,
           viewportHeight: vh,
           viewportWorldHeight: viewport.height,
