@@ -15,7 +15,7 @@ import { createSparkleMaps } from "@/lib/sparkle";
 // A rounded brush script. Its rounded strokes give the inflated, tubular read.
 const FONT_URL = "/fonts/pacifico-sohith.json";
 const WORD = "sohith";
-const NORMAL_SCALE = new THREE.Vector2(0.5, 0.5);
+const NORMAL_SCALE = new THREE.Vector2(0.2, 0.2);
 
 export default function WordText({
   dark,
@@ -105,22 +105,22 @@ export default function WordText({
             // page it reads as flat silver in a light environment, or goes dark
             // in a contrasting one and fights the black headline.
             metalness={0}
-            roughness={dark ? 0.18 : 0.12}
+            roughness={dark ? 0.1 : 0.06}
             // Real refraction: the transmission pass samples what is behind the
             // word — which is exactly why the sticker field exists.
             transmission={glass ? 1 : 0}
             ior={1.18}
-            thickness={dark ? 1.4 : 1.8}
+            thickness={dark ? 0.9 : 1.1}
             // Beer-Lambert absorption: the colour that survives transmission and
             // how quickly it falls off with thickness.
             attenuationColor={dark ? "#64c3ff" : "#009dff"}
-            attenuationDistance={dark ? 1.1 : 0.7}
+            attenuationDistance={dark ? 1.4 : 1.5}
             // Chromatic dispersion — the colour fringing the reference is built on.
-            dispersion={dark ? 0.22 : 0.32}
+            dispersion={dark ? 0.1 : 0.12}
             clearcoat={1}
-            clearcoatRoughness={0.08}
-            envMapIntensity={1.4}
-            iridescence={0.5}
+            clearcoatRoughness={0.06}
+            envMapIntensity={1.8}
+            iridescence={0.12}
             iridescenceIOR={1.4}
             iridescenceThicknessRange={[100, 1400]}
             roughnessMap={sparkle.roughnessMap}

@@ -46,8 +46,9 @@ export default function Effects({ tier }: { tier: EffectTier }) {
       const beauty = scenePass.getTextureNode();
 
       // A wide, soft radius reads as atmosphere; a tight one reads as a cheap
-      // filter. The threshold sits high so only real highlights glow.
-      const glow = bloom(beauty, tier === "full" ? 0.55 : 0.3, 0.62, 0.82);
+      // filter. The threshold sits high so only real highlights glow — a low
+      // threshold bloomed the glass into a soft blob.
+      const glow = bloom(beauty, tier === "full" ? 0.34 : 0.2, 0.55, 0.95);
 
       // NO afterimage here, deliberately. Feedback trails were tried and looked
       // wrong the moment anything moved fast: during the transition's scale-up
