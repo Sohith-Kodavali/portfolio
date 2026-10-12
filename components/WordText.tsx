@@ -15,7 +15,7 @@ import { createSparkleMaps } from "@/lib/sparkle";
 // A rounded brush script. Its rounded strokes give the inflated, tubular read.
 const FONT_URL = "/fonts/pacifico-sohith.json";
 const WORD = "sohith";
-const NORMAL_SCALE = new THREE.Vector2(0.2, 0.2);
+const NORMAL_SCALE = new THREE.Vector2(0.5, 0.5);
 
 export default function WordText({
   dark,
@@ -98,26 +98,19 @@ export default function WordText({
         <mesh geometry={shaped.geometry}>
           <meshPhysicalMaterial
             ref={liquidRef}
-            // Tinted and absorbing enough to read against a near-white page — a
-            // physically pure glass on white is almost invisible, which is why
-            // the name kept disappearing.
-            color={dark ? "#8fa4c4" : "#bfe0ff"}
+            color="#92b5f6"
+            // Glass, not chrome. Full metal was tried and rejected: on a light
+            // page it reads as flat silver in a light environment, or goes dark
+            // in a contrasting one and fights the black headline.
             metalness={0}
-            roughness={dark ? 0.1 : 0.06}
-            // Refraction of whatever is behind the word.
-            transmission={glass ? 0.95 : 0}
-            ior={1.18}
-            thickness={dark ? 0.9 : 1.1}
-            // Beer-Lambert absorption: the colour that survives transmission and
-            // how quickly it falls off with thickness.
-            attenuationColor={dark ? "#64c3ff" : "#0a86ff"}
-            attenuationDistance={dark ? 1.4 : 1.0}
-            // Chromatic dispersion — the colour fringing the reference is built on.
-            dispersion={dark ? 0.1 : 0.14}
+            roughness={0.22}
+            transmission={glass ? 0.85 : 0}
+            ior={1.2}
+            thickness={2}
             clearcoat={1}
-            clearcoatRoughness={0.06}
-            envMapIntensity={1.8}
-            iridescence={0.12}
+            clearcoatRoughness={0.12}
+            envMapIntensity={1.5}
+            iridescence={1}
             iridescenceIOR={1.4}
             iridescenceThicknessRange={[100, 1400]}
             roughnessMap={sparkle.roughnessMap}

@@ -94,21 +94,6 @@ export const projects: Project[] = [
   },
   {
     idx: "03",
-    slug: "vexon",
-    name: "Vexon",
-    category: "Technology · Corporate",
-    year: "2025",
-    summary:
-      "A corporate platform for a technology and digital engineering firm — built to hold up with senior buyers, not just to look modern.",
-    scope: ["Art direction", "Design system", "Front-end", "Motion"],
-    stack: ["Next.js", "React", "Three.js", "Framer Motion"],
-    outcome: "Case study to be written.",
-    image: "/work/vexon.webp",
-    url: "https://vexonsol.com",
-    colors: { c1: [0.26, 0.54, 0.98], c2: [0.02, 0.04, 0.11], freq: 3.0, warp: 1.5 }
-  },
-  {
-    idx: "04",
     slug: "zyppyn",
     name: "Zyppyn",
     category: "Product · Consumer",
@@ -123,7 +108,7 @@ export const projects: Project[] = [
     colors: { c1: [0.48, 0.7, 0.96], c2: [0.03, 0.06, 0.11], freq: 2.4, warp: 1.6 }
   },
   {
-    idx: "05",
+    idx: "04",
     slug: "envirosys",
     name: "Envirosys",
     category: "Environment · Services",
